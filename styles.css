@@ -68,3 +68,11 @@ select.control-input option{background:var(--card);color:var(--text)}
 .access-summary-box h3{font-size:16px;margin:8px 0 10px}
 .access-summary-box .muted{margin:0}
 .stat-grid strong{font-size:clamp(12px,1.7vw,19px)}
+
+/* ALIVI CONTROL 1.9 — editor comercial */
+.commercial-editor{display:grid;gap:15px;max-width:870px}
+.commercial-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.commercial-grid>div{min-width:0}.commercial-grid .control-input{max-width:none}
+.commercial-editor .primary-button{width:auto;min-width:188px;margin:0}
+.billing-readiness{border-color:var(--accent)}
+@media(max-width:760px){.commercial-grid{grid-template-columns:1fr}.commercial-editor .primary-button{width:100%}}

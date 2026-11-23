@@ -1,6 +1,4 @@
 {
-  "version": "1.8.0",
-  "name": "ALIVI CONTROL",
-  "released": "2026-11-23",
-  "notes": "Acesso de colaboradores por modulo com RLS no Supabase; sem mudancas na ALIVI MOBILE."
+  "version": "1.9.0",
+  "notes": "Planos editáveis, testes piloto e estrutura de cobrança não ativada."
 }

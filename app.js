@@ -1,7 +1,7 @@
 'use strict';
-// ALIVI CONTROL 1.8 — somente a chave PÚBLICA do Supabase no navegador.
+// ALIVI CONTROL 1.9 — somente a chave PÚBLICA do Supabase no navegador.
 // Segurança dos dados: o banco aplica RLS com base no JWT da conta autenticada.
-const CONTROL_VERSION='1.8.0';
+const CONTROL_VERSION='1.9.0';
 const SB='https://xadzckilujbydycebizj.supabase.co';
 const PUB='sb_publishable_Gm2JW3ns-WmQmFvg3JNXjA_n0VjCDpD';
 const SESSION_KEY='alivi-central-session-v1';
@@ -33,6 +33,8 @@ function applyAccessView(){
  $('company-create-card').hidden=!isManager();
  $('plans-panel').hidden=!canModule('plans');
  $('subscriptions-panel').hidden=!canModule('subscriptions');
+ $('plan-manage-card').hidden=permission?.role!=='owner';
+ $('trial-manage-card').hidden=permission?.role!=='owner';
  $('limited-access-box').hidden=!isSupport();
  $('limited-overview-note').hidden=!isSupport();
  if(isSupport()){
@@ -64,7 +66,7 @@ function navigate(screen){
 }
 function closeMenu(){$('sidebar').classList.remove('open');$('drawer-overlay').hidden=true}
 function storeSession(data){session=data;localStorage.setItem(SESSION_KEY,JSON.stringify(data))}
-function clearSession(){session=null;identity=null;permission=null;staffPermissions=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.'}
+function clearSession(){session=null;identity=null;permission=null;staffPermissions=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.';$('plan-form').reset();$('trial-form').reset();$('plan-existing').replaceChildren(new Option('+ Criar novo plano',''));$('trial-company').replaceChildren(new Option('Escolha uma empresa cadastrada',''));$('trial-plan').replaceChildren(new Option('Escolha um plano ativo',''));$('plan-save-status').textContent='Entre novamente para editar planos.';$('trial-save-status').textContent='Entre novamente para cadastrar testes.'}
 async function request(path,opts={}){const r=await fetch(SB+path,{...opts,headers:{apikey:PUB,'Content-Type':'application/json',...(opts.token?{Authorization:'Bearer '+opts.token}:{}),...(opts.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok){const err=new Error(data.msg||data.error_description||data.message||data.error||('Erro HTTP '+r.status));err.status=r.status;throw err}return data}
 async function accessToken(){if(!session?.access_token)throw Error('Entre novamente na CONTROL');if(Number(session.expires_at||0)>Date.now()/1000+90)return session.access_token;if(!session.refresh_token)throw Error('Sessão expirada. Entre novamente.');if(!refreshing)refreshing=(async()=>{const d=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})});storeSession(d);return d.access_token})().finally(()=>{refreshing=null});return refreshing}
 async function validateAccess(){const token=await accessToken();const user=await request('/auth/v1/user',{method:'GET',token});if(!user.id||!user.email_confirmed_at)throw Error('Confirme seu e-mail antes de acessar a CENTRAL');const rows=await request('/rest/v1/alivi_central_admins?select=user_id,role,active&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{method:'GET',token});if(!Array.isArray(rows)||rows.length!==1||rows[0].active!==true||!['owner','admin','support'].includes(rows[0].role))throw Error('Esta conta não tem autorização ativa para a ALIVI CONTROL.');
@@ -198,7 +200,7 @@ function renderCompanyRows(){
 }
 async function loadCompanies(force=false){
  const btn=$('companies-refresh');btn.disabled=true;textStatus('companies-status','Consultando empresas vinculadas...');
- try{const rows=await tableRows('companies',force);renderCompanyRows();textStatus('companies-status',`${rows.length} empresa(s) vinculada(s) carregada(s), até 200 por consulta.`)}
+ try{const rows=await tableRows('companies',force);renderCompanyRows();if(permission?.role==='owner')fillCommercialEditors(cache.plans||[],rows);textStatus('companies-status',`${rows.length} empresa(s) vinculada(s) carregada(s), até 200 por consulta.`)}
  catch(e){textStatus('companies-status','Falha na consulta: '+e.message);$('companies-count').textContent='—';$('companies-active').textContent='—';escTable('companies-table-body',4,'Não foi possível carregar as empresas.')}
  finally{btn.disabled=false}
 }
@@ -223,6 +225,7 @@ async function loadCommercial(force=false){
   if(!subs.length)escTable('subs-table-body',5,canSubs?'Nenhuma assinatura cadastrada.':'Sem permissão.');
   else for(const s of subs)sb.appendChild(addCells(document.createElement('tr'),[companyNames.get(s.company_id)||'Empresa não visível',planNames.get(s.plan_id)||'Plano não autorizado ou não listado',s.billing_cycle==='annual'?'Anual':'Mensal',subState[s.status]||s.status,moneyCents(s.price_snapshot_cents)]));
   if(canSubs)textStatus('subs-status',`${subs.length} assinatura(s) na consulta (até 200).`);
+  if(permission?.role==='owner')fillCommercialEditors(plans,companies);
  }catch(e){textStatus('plans-status','Erro: '+e.message);textStatus('subs-status','Erro: '+e.message);escTable('plans-table-body',5,'Consulta indisponível.');escTable('subs-table-body',5,'Consulta indisponível.')}
  finally{btn.disabled=false}
 }
@@ -343,9 +346,91 @@ $('staff-form').addEventListener('submit',async e=>{
    p_email:email,p_active:active,p_clients:active&&flags[0],p_companies:active&&flags[1],p_plans:active&&flags[2],p_subscriptions:active&&flags[3],p_usage:active&&flags[4]
   })});
   if(!checkEpoch(epoch))return;
-  clearStaffForm();textStatus('staff-save-status',active?'Autorização salva. O acesso do colaborador ainda aguarda a etapa de segurança por módulo.':'Acesso administrativo desativado.');
+  clearStaffForm();textStatus('staff-save-status',active?'Autorização salva. Colaborador liberado apenas para os módulos autorizados.':'Acesso administrativo desativado.');
   await loadStaff();
  }catch(err){if(checkEpoch(epoch))textStatus('staff-save-status','Não foi possível alterar: '+String(err.message||err))}
+ finally{btn.disabled=false}
+});
+
+// ALIVI CONTROL 1.9 — contratos de teste e preços, SOMENTE owner.
+// O JWT e verificado novamente pelas funcoes SQL, jamais somente pelo navegador.
+const priceText=cents=>(Number(cents||0)/100).toFixed(2).replace('.',',');
+function parseMoneyCents(value){
+ const raw=String(value).trim();
+ if(!/^\d{1,8}(?:[.,]\d{1,2})?$/.test(raw))throw Error('Informe o preço como 49,90 (sem R$ ou separador de milhar).');
+ const bits=raw.replace('.',',').split(',');
+ const result=Number(bits[0])*100+Number((bits[1]||'').padEnd(2,'0'));
+ if(!Number.isSafeInteger(result)||result<0)return NaN;
+ return result;
+}
+function fillCommercialEditors(plans,companies){
+ const chosen=$('plan-existing').value;
+ $('plan-existing').replaceChildren(new Option('+ Criar novo plano',''));
+ for(const p of plans)$('plan-existing').add(new Option(p.name+' · '+p.code,p.id));
+ if(plans.some(p=>p.id===chosen))$('plan-existing').value=chosen;
+ const company=$('trial-company').value,plan=$('trial-plan').value;
+ $('trial-company').replaceChildren(new Option('Escolha uma empresa cadastrada',''));
+ for(const x of companies.filter(x=>x.active))$('trial-company').add(new Option(x.name,x.id));
+ if(companies.some(x=>x.id===company&&x.active))$('trial-company').value=company;
+ $('trial-plan').replaceChildren(new Option('Escolha um plano ativo',''));
+ for(const p of plans.filter(p=>p.active))$('trial-plan').add(new Option(p.name,p.id));
+ if(plans.some(p=>p.id===plan&&p.active))$('trial-plan').value=plan;
+}
+function resetPlanForm(){
+ $('plan-form').reset();$('plan-existing').value='';$('plan-monthly').value='0,00';$('plan-annual').value='0,00';
+}
+$('plan-clear').addEventListener('click',resetPlanForm);
+$('plan-existing').addEventListener('change',()=>{
+ const row=(cache.plans||[]).find(x=>x.id===$('plan-existing').value);
+ if(!row){resetPlanForm();return}
+ $('plan-code').value=row.code;
+ $('plan-name').value=row.name;
+ $('plan-monthly').value=priceText(row.monthly_price_cents);
+ $('plan-annual').value=priceText(row.annual_price_cents);
+ $('plan-active').checked=!!row.active;
+});
+$('plan-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(permission?.role!=='owner')return;
+ const selected=$('plan-existing').value;
+ const code=$('plan-code').value.trim().toLowerCase();
+ const name=$('plan-name').value.trim();
+ const active=$('plan-active').checked;
+ let monthly,annual;
+ try{monthly=parseMoneyCents($('plan-monthly').value);annual=parseMoneyCents($('plan-annual').value)}
+ catch(e){textStatus('plan-save-status',e.message);return}
+ if(!Number.isInteger(monthly)||!Number.isInteger(annual))return;
+ if(!window.confirm((selected?'ALTERAR':'CRIAR')+' plano '+name+'?\nPreço mensal: '+moneyCents(monthly)+'\nPreço anual: '+moneyCents(annual)+'\nStatus: '+(active?'Ativo':'Inativo')+'\n\nNenhum pagamento será cobrado.'))return;
+ const btn=$('plan-save'),epoch=sessionEpoch;btn.disabled=true;
+ textStatus('plan-save-status','Gravando plano no Supabase...');
+ try{
+  const token=await accessToken();
+  await request('/rest/v1/rpc/alivi_control_save_plan',{method:'POST',token,body:JSON.stringify({
+   p_code:code,p_name:name,p_monthly_price_cents:monthly,p_annual_price_cents:annual,
+   p_active:active,p_plan_id:selected||null
+  })});
+  if(!checkEpoch(epoch))return;
+  textStatus('plan-save-status','Plano salvo. Nenhuma cobrança foi realizada.');
+  resetPlanForm();await loadCommercial(true);await loadOverview(true);
+ }catch(err){if(checkEpoch(epoch))textStatus('plan-save-status','Não foi possível salvar: '+(err.message||err))}
+ finally{btn.disabled=false}
+});
+$('trial-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(permission?.role!=='owner')return;
+ const company=$('trial-company'),plan=$('trial-plan');
+ const days=Number($('trial-days').value);
+ if(!company.value||!plan.value||!Number.isInteger(days)||days<1||days>60){textStatus('trial-save-status','Escolha empresa, plano ativo e duração de 1 a 60 dias.');return}
+ if(!window.confirm('CADASTRAR TESTE de '+days+' dia(s)?\nEmpresa: '+company.selectedOptions[0].text+'\nPlano: '+plan.selectedOptions[0].text+'\n\nEsta operação grava uma assinatura trial; não cobra e não libera automaticamente acesso na MOBILE.'))return;
+ const btn=$('trial-save'),epoch=sessionEpoch;btn.disabled=true;
+ textStatus('trial-save-status','Registrando período de teste...');
+ try{
+  const token=await accessToken();
+  await request('/rest/v1/rpc/alivi_control_start_trial',{method:'POST',token,body:JSON.stringify({p_company_id:company.value,p_plan_id:plan.value,p_days:days})});
+  if(!checkEpoch(epoch))return;
+  textStatus('trial-save-status','Teste cadastrado no banco. Nenhuma cobrança nem liberação de uso foi feita.');
+  $('trial-form').reset();await loadCommercial(true);await loadOverview(true);
+ }catch(err){if(checkEpoch(epoch))textStatus('trial-save-status','Não foi possível cadastrar teste: '+(err.message||err))}
  finally{btn.disabled=false}
 });
 

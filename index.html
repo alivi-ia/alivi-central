@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1b3955">
   <meta name="description" content="ALIVI CONTROL — Administração privada do ecossistema ALIVI.">
-  <title>ALIVI CONTROL • Painel administrativo 1.8</title>
+  <title>ALIVI CONTROL • Painel administrativo 1.9</title>
   <link rel="icon" type="image/png" href="logo-alivi.png">
-  <link rel="stylesheet" href="styles.css?v=1.8.0">
-  <script src="app.js?v=1.8.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=1.9.0">
+  <script src="app.js?v=1.9.0" defer></script>
 </head>
 <body data-theme="orbital">
   <div class="ambient ambient-one" aria-hidden="true"></div>
   <div class="ambient ambient-two" aria-hidden="true"></div>
   <main id="auth-view" class="auth-wrap">
     <section class="auth-card" aria-label="Acesso administrativo">
-      <div class="brand brand-auth"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CONTROL</em></b><small>Controle administrativo · versão 1.8</small></div></div>
+      <div class="brand brand-auth"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CONTROL</em></b><small>Controle administrativo · versão 1.9</small></div></div>
       <div class="auth-heading"><span class="overline">ACESSO RESTRITO</span><h1>Seu centro de comando.</h1><p>Entre com a mesma conta autorizada no Supabase. O sistema confirma sua permissão antes de abrir o painel.</p></div>
       <form id="login-form" autocomplete="on">
         <label for="email">E-mail</label><input id="email" type="email" required autocomplete="username" placeholder="Seu e-mail da ALIVI">
@@ -40,12 +40,12 @@
         <button class="nav-item" id="staff-nav" data-screen="staff" type="button" hidden><span class="nav-icon">♧</span> Equipe e acessos</button>
         <button class="nav-item" data-screen="settings" type="button"><span class="nav-icon">⚙</span> Configurações</button>
       </nav>
-      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.8.0 · Acesso controlado</span></div>
+      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.9.0 · Acesso controlado</span></div>
     </aside>
     <div class="main-frame">
       <header class="topbar"><button id="mobile-menu" class="icon-button mobile-only" type="button" aria-label="Abrir menu">☰</button><div class="breadcrumb">ALIVI <span>/</span> CONTROL <span>/</span> <strong id="breadcrumb-current">Visão geral</strong></div><div class="top-actions"><span class="secure-label"><span class="live-dot"></span> Acesso protegido</span><button id="update-control-button" class="pill-button update-header" type="button" title="Verificar atualização da ALIVI CONTROL" aria-label="Verificar atualização da ALIVI CONTROL">↻ <span class="update-label">Atualizar</span></button><button id="theme-toggle" class="pill-button" type="button" title="Alternar tema">☀ <span id="theme-label">Azul Cristal</span></button><button id="logout-button" class="pill-button logout" type="button">Sair</button></div></header>
       <main class="main-content">
-        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.8</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
+        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.9</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
         <section id="screen-overview" class="screen active" aria-label="Visão geral"><p id="limited-overview-note" class="limited-overview-note" hidden>Você está no perfil <strong>Colaborador</strong>. Os módulos disponíveis no menu são determinados pelas permissões concedidas pelo proprietário. Indicadores sem acesso aparecem como “Sem acesso”.</p>
           <div class="cards three">
             <div class="metric-card"><div class="card-icon success">✓</div><div class="metric-label">Autenticação</div><div class="metric-value" id="access-status">Verificada</div><div class="metric-foot">Conta confirmada no Supabase</div></div>
@@ -122,11 +122,44 @@
             <p class="clients-status" id="plans-status" role="status" aria-live="polite">Aguardando consulta.</p>
             <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th>Plano</th><th>Código</th><th>Mensal</th><th>Anual</th><th>Situação</th></tr></thead><tbody id="plans-table-body"><tr><td colspan="5" class="clients-empty">Nenhum plano carregado.</td></tr></tbody></table></div>
           </section>
+          <section id="plan-manage-card" class="surface-card module-spacer" hidden>
+            <div class="section-heading wrap-heading"><div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Criar ou editar plano</h2></div><span class="info-chip">Sem cobrança</span></div>
+            <p class="muted">Defina preços de referência para nossos futuros contratos. Salvar um plano não cobra ninguém e não publica automaticamente uma página de vendas.</p>
+            <form id="plan-form" class="commercial-editor">
+              <label class="field-label" for="plan-existing">Plano para editar</label>
+              <select id="plan-existing" class="control-input"><option value="">+ Criar novo plano</option></select>
+              <div class="commercial-grid">
+                <div><label class="field-label" for="plan-code">Código interno</label><input id="plan-code" class="control-input" required maxlength="40" pattern="[a-z0-9_-]{2,40}" placeholder="ex: pessoal"></div>
+                <div><label class="field-label" for="plan-name">Nome comercial</label><input id="plan-name" class="control-input" required maxlength="100" placeholder="ex: ALIVI Pessoal"></div>
+                <div><label class="field-label" for="plan-monthly">Mensal (R$)</label><input id="plan-monthly" class="control-input" inputmode="decimal" required value="0,00" placeholder="0,00"></div>
+                <div><label class="field-label" for="plan-annual">Anual (R$)</label><input id="plan-annual" class="control-input" inputmode="decimal" required value="0,00" placeholder="0,00"></div>
+              </div>
+              <label class="staff-toggle"><input id="plan-active" type="checkbox"> <span>Plano ativo para vincular a um teste (não ativa cobrança)</span></label>
+              <div class="staff-actions"><button id="plan-save" class="primary-button" type="submit">Salvar plano</button><button id="plan-clear" type="button" class="secondary-button">Novo plano</button></div>
+            </form>
+            <p id="plan-save-status" class="clients-status" role="status" aria-live="polite">Nenhum plano alterado.</p>
+          </section>
           <section class="surface-card module-spacer" id="subscriptions-panel">
             <div class="section-heading"><div><span class="eyebrow">CONTROLE DE CONTRATOS</span><h2>Assinaturas por empresa</h2></div><span class="info-chip">Somente leitura</span></div>
             <p class="clients-status" id="subs-status" role="status" aria-live="polite">Aguardando consulta.</p>
             <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th>Empresa</th><th>Plano</th><th>Ciclo</th><th>Situação</th><th>Preço contratado</th></tr></thead><tbody id="subs-table-body"><tr><td colspan="5" class="clients-empty">Nenhuma assinatura carregada.</td></tr></tbody></table></div>
             <p class="hint">Status “ativo” não comprova pagamento recebido. A integração com pagamentos será feita separadamente.</p>
+          </section>
+          <section id="trial-manage-card" class="surface-card module-spacer" hidden>
+            <div class="section-heading wrap-heading"><div><span class="eyebrow">TESTES PILOTO · SOMENTE PROPRIETÁRIO</span><h2>Vincular período de teste</h2></div><span class="info-chip">Sem pagamento</span></div>
+            <p class="muted">Registra uma assinatura de teste em uma empresa cadastrada. Isso não libera automaticamente o acesso na MOBILE e não implica cobrança, venda ou pagamento recebido.</p>
+            <form id="trial-form" class="commercial-editor">
+              <div class="commercial-grid"><div><label class="field-label" for="trial-company">Empresa</label><select id="trial-company" required class="control-input"><option value="">Escolha uma empresa cadastrada</option></select></div>
+              <div><label class="field-label" for="trial-plan">Plano ativo</label><select id="trial-plan" required class="control-input"><option value="">Escolha um plano ativo</option></select></div>
+              <div><label class="field-label" for="trial-days">Duração do teste (dias)</label><input id="trial-days" type="number" class="control-input" min="1" max="60" value="14" required></div></div>
+              <div class="staff-actions"><button id="trial-save" type="submit" class="primary-button">Cadastrar teste</button></div>
+            </form>
+            <p id="trial-save-status" role="status" aria-live="polite" class="clients-status">Nenhum teste cadastrado.</p>
+          </section>
+          <section class="surface-card module-spacer billing-readiness">
+            <div class="section-heading"><div><span class="eyebrow">PAGAMENTOS</span><h2>Integração em preparação</h2></div><span class="info-chip">Não habilitado</span></div>
+            <p class="muted">A base para registrar eventos futuros de pagamento será criada no Supabase. Ainda não existe checkout, Pix, cartão, webhook nem confirmação automática. Ninguém será cobrado nesta versão.</p>
+            <p class="hint">Próxima fase: escolher o provedor, configurar credenciais privadas no servidor, testar pagamentos em ambiente de homologação e confirmar eventos antes de liberar assinaturas pagas.</p>
           </section>
         </section>
         <section id="screen-monitoring" class="screen" aria-label="Consumo e custos">
@@ -172,7 +205,7 @@
                   <label><input type="checkbox" id="staff-usage"> Consumo e custos</label>
                 </div>
               </fieldset>
-              <p class="hint">Na versão 1.8, contas com perfil Suporte e e-mail confirmado poderão entrar e consultar <strong>somente os módulos marcados</strong>. Cada consulta será protegida também no Supabase. Nenhuma permissão de edição, cobrança ou administração de equipe será concedida.</p>
+              <p class="hint">Na versão 1.9, contas com perfil Suporte e e-mail confirmado poderão entrar e consultar <strong>somente os módulos marcados</strong>. Cada consulta será protegida também no Supabase. Nenhuma permissão de edição, cobrança ou administração de equipe será concedida.</p>
               <div class="staff-actions"><button id="staff-save" type="submit" class="primary-button">Salvar autorização</button><button id="staff-clear" type="button" class="secondary-button">Limpar formulário</button></div>
             </form>
             <p id="staff-save-status" class="clients-status" role="status" aria-live="polite">Nenhuma alteração efetuada.</p>
