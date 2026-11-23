@@ -4,59 +4,70 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1b3955">
-  <meta name="description" content="ALIVI CENTRAL — Administração privada do ecossistema ALIVI.">
-  <title>ALIVI CENTRAL • Painel administrativo 1.1</title>
+  <meta name="description" content="ALIVI CONTROL — Administração privada do ecossistema ALIVI.">
+  <title>ALIVI CONTROL • Painel administrativo 1.5</title>
   <link rel="icon" type="image/png" href="logo-alivi.png">
-  <link rel="stylesheet" href="styles.css?v=1.1.0">
-  <script src="app.js?v=1.1.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=1.5.0">
+  <script src="app.js?v=1.5.0" defer></script>
 </head>
 <body data-theme="orbital">
   <div class="ambient ambient-one" aria-hidden="true"></div>
   <div class="ambient ambient-two" aria-hidden="true"></div>
   <main id="auth-view" class="auth-wrap">
     <section class="auth-card" aria-label="Acesso administrativo">
-      <div class="brand brand-auth"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CENTRAL</em></b><small>Controle administrativo · versão 1.1</small></div></div>
+      <div class="brand brand-auth"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CONTROL</em></b><small>Controle administrativo · versão 1.5</small></div></div>
       <div class="auth-heading"><span class="overline">ACESSO RESTRITO</span><h1>Seu centro de comando.</h1><p>Entre com a mesma conta autorizada no Supabase. O sistema confirma sua permissão antes de abrir o painel.</p></div>
       <form id="login-form" autocomplete="on">
         <label for="email">E-mail</label><input id="email" type="email" required autocomplete="username" placeholder="Seu e-mail da ALIVI">
         <label for="password">Senha</label><input id="password" type="password" required autocomplete="current-password" placeholder="Sua senha">
-        <button id="login-button" class="primary-button" type="submit"><span>Entrar na CENTRAL</span><span aria-hidden="true">→</span></button>
+        <button id="login-button" class="primary-button" type="submit"><span>Entrar na CONTROL</span><span aria-hidden="true">→</span></button>
       </form>
       <p id="login-status" class="form-status" role="status" aria-live="polite">Somente contas administrativas autorizadas.</p>
-      <div class="auth-footer"><span class="mini-lock">♧</span> A CENTRAL não oferece cadastro público e não exibe conversas privadas dos clientes.</div>
+      <div class="auth-footer"><span class="mini-lock">♧</span> A CONTROL não oferece cadastro público e não exibe conversas privadas dos clientes.</div>
       <a class="subtle-link" href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">Ir para ALIVI MOBILE ↗</a>
     </section>
   </main>
   <div id="panel-view" class="app-shell" hidden>
     <aside id="sidebar" class="sidebar">
-      <div class="brand brand-side"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CENTRAL</em></b><small>Administração privada</small></div></div>
+      <div class="brand brand-side"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CONTROL</em></b><small>Administração privada</small></div></div>
       <div class="nav-caption">PAINEL ADMINISTRATIVO</div>
       <nav aria-label="Menu principal" id="main-nav">
         <button class="nav-item active" data-screen="overview" type="button"><span class="nav-icon">◫</span> Visão geral</button>
         <button class="nav-item" data-screen="clients" type="button"><span class="nav-icon">♙</span> Clientes</button>
-        <button class="nav-item" data-screen="subscriptions" type="button"><span class="nav-icon">▣</span> Assinaturas</button>
-        <button class="nav-item" data-screen="monitoring" type="button"><span class="nav-icon">◷</span> Monitoramento</button>
+        <button class="nav-item" data-screen="companies" type="button"><span class="nav-icon">▤</span> Empresas</button>
+        <button class="nav-item" data-screen="subscriptions" type="button"><span class="nav-icon">▣</span> Planos e assinaturas</button>
+        <button class="nav-item" data-screen="monitoring" type="button"><span class="nav-icon">◷</span> Consumo e custos</button>
         <button class="nav-item" data-screen="settings" type="button"><span class="nav-icon">⚙</span> Configurações</button>
       </nav>
-      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CENTRAL v1.1.0 · Acesso controlado</span></div>
+      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.5.0 · Acesso controlado</span></div>
     </aside>
     <div class="main-frame">
-      <header class="topbar"><button id="mobile-menu" class="icon-button mobile-only" type="button" aria-label="Abrir menu">☰</button><div class="breadcrumb">ALIVI <span>/</span> CENTRAL <span>/</span> <strong id="breadcrumb-current">Visão geral</strong></div><div class="top-actions"><span class="secure-label"><span class="live-dot"></span> Acesso protegido</span><button id="theme-toggle" class="pill-button" type="button" title="Alternar tema">☀ <span id="theme-label">Azul Cristal</span></button><button id="logout-button" class="pill-button logout" type="button">Sair</button></div></header>
+      <header class="topbar"><button id="mobile-menu" class="icon-button mobile-only" type="button" aria-label="Abrir menu">☰</button><div class="breadcrumb">ALIVI <span>/</span> CONTROL <span>/</span> <strong id="breadcrumb-current">Visão geral</strong></div><div class="top-actions"><span class="secure-label"><span class="live-dot"></span> Acesso protegido</span><button id="theme-toggle" class="pill-button" type="button" title="Alternar tema">☀ <span id="theme-label">Azul Cristal</span></button><button id="logout-button" class="pill-button logout" type="button">Sair</button></div></header>
       <main class="main-content">
-        <div class="hero"><div><span class="overline">ALIVI CENTRAL 1.1</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Base administrativa pronta para receber os módulos comerciais com segurança e controle.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
+        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.5</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
         <section id="screen-overview" class="screen active" aria-label="Visão geral">
           <div class="cards three">
             <div class="metric-card"><div class="card-icon success">✓</div><div class="metric-label">Autenticação</div><div class="metric-value" id="access-status">Verificada</div><div class="metric-foot">Conta confirmada no Supabase</div></div>
-            <div class="metric-card"><div class="card-icon">◇</div><div class="metric-label">Nível de acesso</div><div class="metric-value" id="access-role">—</div><div class="metric-foot">Concedido pela CENTRAL</div></div>
-            <div class="metric-card"><div class="card-icon">◎</div><div class="metric-label">Fase do produto</div><div class="metric-value">Fundação</div><div class="metric-foot">Painel inicial de administração</div></div>
+            <div class="metric-card"><div class="card-icon">◇</div><div class="metric-label">Nível de acesso</div><div class="metric-value" id="access-role">—</div><div class="metric-foot">Concedido pela CONTROL</div></div>
+            <div class="metric-card"><div class="card-icon">◎</div><div class="metric-label">Empresas vinculadas</div><div class="metric-value" id="overview-companies">—</div><div class="metric-foot">Confirmadas pelo Supabase</div></div>
           </div>
           <div class="two-column">
-            <section class="surface-card"><div class="section-heading"><div><span class="eyebrow">ETAPAS</span><h2>Evolução da CENTRAL</h2></div><span class="info-chip">Planejamento</span></div>
-              <div class="timeline"><div class="timeline-item done"><i></i><div><b>01 · Segurança administrativa</b><p>Autenticação e verificação do perfil autorizado.</p></div><span>Pronta</span></div><div class="timeline-item current"><i></i><div><b>02 · Painel inicial</b><p>Visão geral, navegação e temas Orbital / Cristal.</p></div><span>Em teste</span></div><div class="timeline-item"><i></i><div><b>03 · Consulta de cadastros</b><p>Leitura administrativa dos usuários registrados.</p></div><span>Pronta para teste</span></div><div class="timeline-item"><i></i><div><b>04 · Indicadores operacionais</b><p>Custos, consumo de IA, voz, erros e notificações.</p></div><span>Planejada</span></div></div>
+            <section class="surface-card"><div class="section-heading"><div><span class="eyebrow">ETAPAS</span><h2>Evolução da CONTROL</h2></div><span class="info-chip">Planejamento</span></div>
+              <div class="timeline"><div class="timeline-item done"><i></i><div><b>01 · Segurança administrativa</b><p>Autenticação e verificação do perfil autorizado.</p></div><span>Pronta</span></div><div class="timeline-item current"><i></i><div><b>02 · Painel inicial</b><p>Visão geral, navegação e temas Orbital / Cristal.</p></div><span>Em teste</span></div><div class="timeline-item"><i></i><div><b>03 · Consulta de cadastros</b><p>Leitura administrativa dos usuários registrados.</p></div><span>Disponível</span></div><div class="timeline-item"><i></i><div><b>04 · Empresas, planos e eventos</b><p>Listas reais no Supabase; integrações de cobrança e medição ainda pendentes.</p></div><span>Em validação</span></div></div>
             </section>
-            <section class="surface-card"><div class="section-heading"><div><span class="eyebrow">ACESSO</span><h2>Seu ambiente protegido</h2></div><div class="card-icon small success">⌁</div></div><p class="muted">Este painel só é exibido após a validação do usuário e da autorização administrativa. A CENTRAL não lê conversas particulares de clientes.</p><div class="detail-block"><span>Conta conectada</span><strong id="account-email">—</strong></div><div class="detail-block"><span>Permissão ativa</span><strong id="account-role">—</strong></div><button type="button" class="secondary-button" id="recheck-button">↻ Verificar meu acesso</button><p id="check-status" class="hint" aria-live="polite"></p></section>
+            <section class="surface-card"><div class="section-heading"><div><span class="eyebrow">ACESSO</span><h2>Seu ambiente protegido</h2></div><div class="card-icon small success">⌁</div></div><p class="muted">Este painel só é exibido após a validação do usuário e da autorização administrativa. A CONTROL não lê conversas particulares de clientes.</p><div class="detail-block"><span>Conta conectada</span><strong id="account-email">—</strong></div><div class="detail-block"><span>Permissão ativa</span><strong id="account-role">—</strong></div><button type="button" class="secondary-button" id="recheck-button">↻ Verificar meu acesso</button><p id="check-status" class="hint" aria-live="polite"></p></section>
           </div>
-          <section class="note-banner"><span class="note-symbol">✧</span><p><strong>Próxima fase:</strong> validar a consulta de clientes e depois preparar assinaturas e custos por meio de rotas administrativas seguras. Nenhum número comercial é inventado nesta versão.</p></section>
+          <section class="note-banner"><span class="note-symbol">✧</span><p><strong>Próxima fase:</strong> validar as telas de empresas, planos e consumo. A lista de eventos só inclui consumo gravado pelo backend; não representa automaticamente a fatura total da IA.</p></section>
+          <section class="surface-card overview-module" aria-label="Resumo comercial">
+            <div class="section-heading"><div><span class="eyebrow">DADOS REAIS</span><h2>Resumo da operação</h2></div><button type="button" class="secondary-button" id="overview-refresh">↻ Atualizar</button></div>
+            <div class="stat-grid">
+              <div><span>Planos configurados</span><strong id="overview-plans">—</strong></div>
+              <div><span>Assinaturas registradas</span><strong id="overview-subs">—</strong></div>
+              <div><span>Eventos de consumo (até 200)</span><strong id="overview-usage">—</strong></div>
+              <div><span>Custo estimado nesses eventos</span><strong id="overview-cost">—</strong></div>
+            </div>
+            <p class="hint" id="overview-status" role="status" aria-live="polite">Os dados serão consultados quando você entrar no painel.</p>
+          </section>
         </section>
         <section id="screen-clients" class="screen" aria-label="Clientes">
           <section class="surface-card">
@@ -84,9 +95,55 @@
             <p class="hint">Exibe até os 100 usuários mais recentemente cadastrados. Pesquisa limitada aos registros carregados. Sem edição ou exclusão nesta versão.</p>
           </section>
         </section>
-        <section id="screen-subscriptions" class="screen" aria-label="Assinaturas"><div class="surface-card empty-section"><span class="empty-icon">▣</span><h2>Planos e assinaturas</h2><p>Em preparação. Os futuros planos, cobranças e renovações ficarão aqui, após integrarmos um provedor de pagamento e validação no servidor.</p><span class="info-chip">Módulo planejado</span></div></section>
-        <section id="screen-monitoring" class="screen" aria-label="Monitoramento"><div class="surface-card empty-section"><span class="empty-icon">◷</span><h2>Monitoramento</h2><p>Em preparação. Vamos acompanhar consumo de IA, voz, notificações e disponibilidade, sem expor chaves privadas no navegador.</p><span class="info-chip">Módulo planejado</span></div></section>
-        <section id="screen-settings" class="screen" aria-label="Configurações"><section class="surface-card"><div class="section-heading"><div><span class="eyebrow">PERSONALIZAÇÃO</span><h2>Aparência da CENTRAL</h2></div></div><p class="muted">Escolha o tema para este aparelho.</p><div class="theme-options"><button id="pick-orbital" type="button" class="theme-option selected"><span class="theme-preview orbital"></span><strong>Azul Orbital</strong><small>Escuro futurista</small></button><button id="pick-cristal" type="button" class="theme-option"><span class="theme-preview cristal"></span><strong>Azul Cristal</strong><small>Claro e sofisticado</small></button></div><div class="detail-block"><span>Usuário autorizado</span><strong id="settings-email">—</strong></div><p class="hint">Este painel não contém credenciais administrativas privadas e usa a mesma autenticação do Supabase da ALIVI MOBILE.</p></section></section>
+        <section id="screen-companies" class="screen" aria-label="Empresas">
+          <section class="surface-card">
+            <div class="section-heading wrap-heading"><div><span class="eyebrow">BASE MULTIEMPRESA</span><h2>Empresas vinculadas à sua conta</h2></div><button class="secondary-button" type="button" id="companies-refresh">↻ Atualizar</button></div>
+            <p class="muted">Cada empresa possui um identificador próprio. Nesta versão, o painel exibe as empresas em que sua conta tem vínculo ativo. A listagem administrativa global será ampliada em etapa posterior.</p>
+            <div class="client-summary two-summary"><div><span class="metric-label">Empresas carregadas</span><strong id="companies-count">—</strong></div><div><span class="metric-label">Empresas ativas</span><strong id="companies-active">—</strong></div></div>
+            <label class="field-label" for="companies-search">Buscar empresa</label><input id="companies-search" type="search" placeholder="Digite o nome ou segmento" autocomplete="off" class="control-input">
+            <p class="clients-status" id="companies-status" role="status">Nenhuma empresa carregada.</p>
+            <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th>Empresa</th><th>Segmento</th><th>Situação</th><th>Cadastro</th></tr></thead><tbody id="companies-table-body"><tr><td class="clients-empty" colspan="4">Sem consulta.</td></tr></tbody></table></div>
+          </section>
+          <section class="surface-card module-spacer">
+            <div class="section-heading"><div><span class="eyebrow">CADASTRO CONTROLADO</span><h2>Cadastrar empresa</h2></div><span class="info-chip">Cria registro real</span></div>
+            <p class="muted">O cadastro é uma operação real no Supabase. Não crie empresas de teste se quiser manter a base limpa. Nenhuma empresa é criada automaticamente.</p>
+            <form id="company-form" class="company-form">
+              <div><label class="field-label" for="company-name">Nome da empresa</label><input id="company-name" class="control-input" minlength="2" maxlength="120" required placeholder="Ex.: Restaurante Exemplo"></div>
+              <div><label class="field-label" for="company-segment">Segmento</label><select id="company-segment" class="control-input"><option value="restaurante">Restaurante</option><option value="lanchonete">Lanchonete</option><option value="reciclagem">Reciclagem / sucata</option><option value="comercio">Comércio</option><option value="servicos">Serviços</option><option value="geral">Outro / geral</option></select></div>
+              <div class="form-submit-row"><button id="company-create" type="submit" class="primary-button">Cadastrar empresa <span>+</span></button></div>
+            </form><p id="company-create-status" class="clients-status" role="status" aria-live="polite">Somente administradores autorizados podem cadastrar.</p>
+          </section>
+        </section>
+        <section id="screen-subscriptions" class="screen" aria-label="Planos e assinaturas">
+          <section class="surface-card">
+            <div class="section-heading wrap-heading"><div><span class="eyebrow">ESTRUTURA COMERCIAL</span><h2>Planos cadastrados</h2></div><button type="button" class="secondary-button" id="commercial-refresh">↻ Atualizar</button></div>
+            <p class="muted">Valores e situações lidos diretamente do Supabase. Nenhum pagamento ou cobrança é realizado por esta tela.</p>
+            <p class="clients-status" id="plans-status" role="status" aria-live="polite">Aguardando consulta.</p>
+            <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th>Plano</th><th>Código</th><th>Mensal</th><th>Anual</th><th>Situação</th></tr></thead><tbody id="plans-table-body"><tr><td colspan="5" class="clients-empty">Nenhum plano carregado.</td></tr></tbody></table></div>
+          </section>
+          <section class="surface-card module-spacer">
+            <div class="section-heading"><div><span class="eyebrow">CONTROLE DE CONTRATOS</span><h2>Assinaturas por empresa</h2></div><span class="info-chip">Somente leitura</span></div>
+            <p class="clients-status" id="subs-status" role="status" aria-live="polite">Aguardando consulta.</p>
+            <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th>Empresa</th><th>Plano</th><th>Ciclo</th><th>Situação</th><th>Preço contratado</th></tr></thead><tbody id="subs-table-body"><tr><td colspan="5" class="clients-empty">Nenhuma assinatura carregada.</td></tr></tbody></table></div>
+            <p class="hint">Status “ativo” não comprova pagamento recebido. A integração com pagamentos será feita separadamente.</p>
+          </section>
+        </section>
+        <section id="screen-monitoring" class="screen" aria-label="Consumo e custos">
+          <section class="surface-card">
+            <div class="section-heading wrap-heading"><div><span class="eyebrow">USO REGISTRADO</span><h2>Eventos de IA, voz e notificações</h2></div><button id="usage-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
+            <p class="muted">Os dados abaixo vêm apenas da tabela de eventos. Enquanto o aplicativo não enviar medições para ela, os valores ficam em zero, mesmo que tenha havido consumo real de API.</p>
+            <div class="stat-grid">
+              <div><span>Eventos carregados</span><strong id="usage-count">—</strong></div>
+              <div><span>Tokens de entrada</span><strong id="usage-input">—</strong></div>
+              <div><span>Tokens de saída</span><strong id="usage-output">—</strong></div>
+              <div><span>Custos estimados (amostra)</span><strong id="usage-cost">—</strong></div>
+            </div>
+            <p class="clients-status" id="usage-status" role="status" aria-live="polite">Aguardando consulta.</p>
+            <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th>Quando</th><th>Tipo</th><th>Empresa</th><th>Unidades</th><th>Custo estimado</th></tr></thead><tbody id="usage-table-body"><tr><td colspan="5" class="clients-empty">Nenhum evento carregado.</td></tr></tbody></table></div>
+            <p class="hint">Consulta limitada aos 200 eventos mais recentes. O total exibido não é a fatura global do provedor de IA.</p>
+          </section>
+        </section>
+        <section id="screen-settings" class="screen" aria-label="Configurações"><section class="surface-card"><div class="section-heading"><div><span class="eyebrow">PERSONALIZAÇÃO</span><h2>Aparência da ALIVI CONTROL</h2></div></div><p class="muted">Escolha o tema para este aparelho.</p><div class="theme-options"><button id="pick-orbital" type="button" class="theme-option selected"><span class="theme-preview orbital"></span><strong>Azul Orbital</strong><small>Escuro futurista</small></button><button id="pick-cristal" type="button" class="theme-option"><span class="theme-preview cristal"></span><strong>Azul Cristal</strong><small>Claro e sofisticado</small></button></div><div class="detail-block"><span>Usuário autorizado</span><strong id="settings-email">—</strong></div><p class="hint">Este painel não contém credenciais administrativas privadas e usa a mesma autenticação do Supabase da ALIVI MOBILE.</p></section></section>
       </main>
     </div>
     <div id="drawer-overlay" class="drawer-overlay" hidden></div>
