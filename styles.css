@@ -31,3 +31,17 @@ select.control-input option{background:var(--card);color:var(--text)}
 @media(max-width:1030px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.company-form{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}.stat-grid strong{font-size:18px}}
 @media(max-width:400px){.stat-grid{grid-template-columns:1fr}}
+
+/* ALIVI CONTROL 1.6 — controle de atualização do GitHub Pages */
+.update-header{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.update-header.update-available{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 20%,transparent)}
+.update-module{scroll-margin-top:80px}
+.update-version-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.update-version-grid>div{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:16px;display:grid;gap:8px}
+.update-version-grid span{font-size:11px;color:var(--muted)}
+.update-version-grid strong{font-size:21px;overflow-wrap:anywhere}
+.update-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.update-buttons .primary-button{height:42px;margin:0;display:inline-flex;gap:10px;justify-content:center}
+@media(max-width:1120px){.update-header .update-label{display:none}}
+@media(max-width:760px){.update-version-grid{grid-template-columns:1fr 1fr}.update-buttons{align-items:stretch;flex-direction:column}.update-buttons .primary-button,.update-buttons .secondary-button{width:100%}}
+@media(max-width:420px){.update-version-grid{grid-template-columns:1fr}}

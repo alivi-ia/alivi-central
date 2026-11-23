@@ -1,6 +1,7 @@
 'use strict';
-// ALIVI CONTROL 1.5 — somente a chave PÚBLICA do Supabase no navegador.
+// ALIVI CONTROL 1.6 — somente a chave PÚBLICA do Supabase no navegador.
 // Segurança dos dados: o banco aplica RLS com base no JWT da conta autenticada.
+const CONTROL_VERSION='1.6.0';
 const SB='https://xadzckilujbydycebizj.supabase.co';
 const PUB='sb_publishable_Gm2JW3ns-WmQmFvg3JNXjA_n0VjCDpD';
 const SESSION_KEY='alivi-central-session-v1';
@@ -83,7 +84,7 @@ $('clients-search').addEventListener('input',()=>{if(Array.isArray(clientRows))r
 window.addEventListener('pageshow',e=>{if(e.persisted&&session)validateAccess().catch(()=>{clearSession();showAuth('Sua sessão precisa ser renovada.',true)})});
 
 
-// ALIVI CONTROL 1.5 — consultas protegidas por JWT e RLS no Supabase.
+// ALIVI CONTROL 1.6 — consultas protegidas por JWT e RLS no Supabase.
 // As tabelas comerciais sao de LEITURA; cadastro de empresa somente por RPC autorizado.
 const nfmt=new Intl.NumberFormat('pt-BR');
 const brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
@@ -202,4 +203,58 @@ $('company-form').addEventListener('submit',async e=>{
  }catch(err){if(checkEpoch(epoch))textStatus('company-create-status','Não foi possível cadastrar: '+err.message)}finally{b.disabled=false}
 });
 
-restore();
+// ALIVI CONTROL 1.6 — atualização do painel (GitHub Pages).
+// O arquivo version.json da publicação informa a versão disponível; nunca altera o código no GitHub.
+let versionCheckPending=null;
+function parts(version){return String(version).split('.').map(x=>Number(x));}
+function isNewerVersion(remote,local){
+ const a=parts(remote),b=parts(local);
+ for(let i=0;i<3;i++){if((a[i]||0)!==(b[i]||0))return (a[i]||0)>(b[i]||0)}
+ return false;
+}
+function updateMessage(message){$('update-control-status').textContent=message;$('update-control-button').title=message;}
+function setChecking(loading){$('update-control-button').disabled=loading;$('update-control-settings').disabled=loading;}
+function refreshControl(){
+ const url=new URL(window.location.href);
+ url.searchParams.set('alivi_refresh',String(Date.now()));
+ window.location.replace(url.toString());
+}
+async function checkControlUpdate(interactive=true){
+ if(versionCheckPending)return versionCheckPending;
+ setChecking(true);updateMessage('Conferindo a versão publicada no GitHub Pages...');
+ versionCheckPending=(async()=>{
+  try{
+   const url=new URL('version.json',document.baseURI);
+   url.searchParams.set('_',String(Date.now()));
+   const response=await fetch(url.toString(),{cache:'no-store',headers:{'Accept':'application/json'}});
+   if(!response.ok)throw new Error('Não foi possível consultar o arquivo version.json (HTTP '+response.status+').');
+   const released=await response.json();
+   const version=String(released.version||'');
+   if(!/^\d+\.\d+\.\d+$/.test(version))throw new Error('O arquivo de versão publicado está inválido.');
+   $('published-control-version').textContent=version;
+   const newer=isNewerVersion(version,CONTROL_VERSION);
+   $('update-control-button').classList.toggle('update-available',newer);
+   if(newer){
+    updateMessage('Nova versão '+version+' disponível. Clique em Atualizar para carregar.');
+    if(interactive && window.confirm('A ALIVI CONTROL '+version+' já está publicada. Atualizar o painel agora?\n\nFormulários em edição não salvos serão descartados.'))refreshControl();
+   }else if(version===CONTROL_VERSION){
+    updateMessage('ALIVI CONTROL '+CONTROL_VERSION+' está atualizada.');
+   }else{
+    updateMessage('O GitHub Pages informa '+version+', anterior à versão instalada '+CONTROL_VERSION+'. Aguarde a publicação do repositório.');
+   }
+  }catch(error){
+   $('published-control-version').textContent='Indisponível';
+   updateMessage('Não foi possível verificar atualização: '+(error?.message||'Erro de conexão'));
+  }
+ })().finally(()=>{versionCheckPending=null;setChecking(false)});
+ return versionCheckPending;
+}
+$('update-control-button').addEventListener('click',()=>checkControlUpdate(true));
+$('update-control-settings').addEventListener('click',()=>checkControlUpdate(true));
+$('reload-control-button').addEventListener('click',()=>{
+ if(window.confirm('Recarregar a ALIVI CONTROL? Formulários não enviados serão descartados.'))refreshControl();
+});
+$('installed-control-version').textContent=CONTROL_VERSION;
+
+restore().then(()=>{if(identity&&permission?.active)checkControlUpdate(false)});
+
