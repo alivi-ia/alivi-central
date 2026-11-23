@@ -1,7 +1,7 @@
 'use strict';
 // ALIVI CONTROL 1.9 — somente a chave PÚBLICA do Supabase no navegador.
 // Segurança dos dados: o banco aplica RLS com base no JWT da conta autenticada.
-const CONTROL_VERSION='1.9.0';
+const CONTROL_VERSION='1.10.0';
 const SB='https://xadzckilujbydycebizj.supabase.co';
 const PUB='sb_publishable_Gm2JW3ns-WmQmFvg3JNXjA_n0VjCDpD';
 const SESSION_KEY='alivi-central-session-v1';
@@ -10,7 +10,7 @@ const $=id=>document.getElementById(id);
 let session=null,identity=null,permission=null,refreshing=null,clientRows=null,clientsLoading=null,sessionEpoch=0,staffRows=null,staffLoading=null,staffPermissions=null;
 const cache={companies:null,plans:null,subscriptions:null,usage:null};
 const inFlight={};
-const titles={overview:['Visão geral','Sua operação, em um só lugar.','Acompanhe clientes, empresas, planos e consumo sem acessar dados privados.'],clients:['Clientes','Gestão de clientes.','Consulta protegida de contas cadastradas no Supabase, sem acesso a conversas particulares.'],companies:['Empresas','Empresas e acessos.','Cadastre empresas e confira os vínculos autorizados nesta conta.'],subscriptions:['Planos e assinaturas','Planos e assinaturas.','Acompanhamento comercial sem cobranças reais nesta versão.'],monitoring:['Consumo e custos','Indicadores de consumo.','Eventos registrados pela operação, não faturas do provedor de IA.'],staff:['Equipe e acessos','Acesso dos seus colaboradores.','Defina permissões administrativas restritas, sem acesso a conversas particulares.'],settings:['Configurações','Seu painel, suas escolhas.','Personalize a aparência da ALIVI CONTROL neste aparelho.']};
+const titles={overview:['Visão geral','Sua operação, em um só lugar.','Acompanhe clientes, empresas, planos e consumo sem acessar dados privados.'],clients:['Clientes','Gestão de clientes.','Consulta protegida de contas cadastradas no Supabase, sem acesso a conversas particulares.'],companies:['Empresas','Empresas e acessos.','Cadastre empresas e confira os vínculos autorizados nesta conta.'],subscriptions:['Planos e assinaturas','Planos e assinaturas.','Acompanhamento comercial sem cobranças reais nesta versão.'],monitoring:['Consumo e custos','Indicadores de consumo.','Eventos registrados pela operação, não faturas do provedor de IA.'],feedback:['ALIVI Feedback','Sugestões e problemas dos testadores.','Mensagens enviadas voluntariamente pela MOBILE, sem acesso a chats privados.'],staff:['Equipe e acessos','Acesso dos seus colaboradores.','Defina permissões administrativas restritas, sem acesso a conversas particulares.'],settings:['Configurações','Seu painel, suas escolhas.','Personalize a aparência da ALIVI CONTROL neste aparelho.']};
 function status(message,error=false){$('login-status').textContent=message;$('login-status').classList.toggle('error',error)}
 function setTheme(name){const theme=name==='cristal'?'cristal':'orbital';document.body.dataset.theme=theme;localStorage.setItem(THEME_KEY,theme);$('theme-label').textContent=theme==='cristal'?'Azul Orbital':'Azul Cristal';$('theme-toggle').firstChild.textContent=theme==='cristal'?'☾ ':'☀ ';$('pick-orbital').classList.toggle('selected',theme==='orbital');$('pick-cristal').classList.toggle('selected',theme==='cristal')}
 function showAuth(message='Somente contas administrativas autorizadas.',error=false){$('panel-view').hidden=true;$('auth-view').hidden=false;status(message,error)}
@@ -22,7 +22,7 @@ function canModule(name){return isManager()||(isSupport()&&staffPermissions?.[pe
 function canScreen(screen){
  if(!permission?.active)return false;
  if(screen==='overview'||screen==='settings')return true;
- if(screen==='staff')return permission.role==='owner';
+ if(screen==='staff'||screen==='feedback')return permission.role==='owner';
  if(screen==='subscriptions')return canModule('plans')||canModule('subscriptions');
  if(screen==='monitoring')return canModule('usage');
  if(screen==='clients'||screen==='companies')return canModule(screen);
@@ -62,11 +62,11 @@ function navigate(screen){
  if(screen==='subscriptions')loadCommercial();
  if(screen==='monitoring')loadUsage();
  if(screen==='overview')loadOverview();
- if(screen==='staff')loadStaff();
+ if(screen==='staff')loadStaff();if(screen==='feedback')loadControlFeedback();
 }
 function closeMenu(){$('sidebar').classList.remove('open');$('drawer-overlay').hidden=true}
 function storeSession(data){session=data;localStorage.setItem(SESSION_KEY,JSON.stringify(data))}
-function clearSession(){session=null;identity=null;permission=null;staffPermissions=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.';$('plan-form').reset();$('trial-form').reset();$('plan-existing').replaceChildren(new Option('+ Criar novo plano',''));$('trial-company').replaceChildren(new Option('Escolha uma empresa cadastrada',''));$('trial-plan').replaceChildren(new Option('Escolha um plano ativo',''));$('plan-save-status').textContent='Entre novamente para editar planos.';$('trial-save-status').textContent='Entre novamente para cadastrar testes.'}
+function clearSession(){session=null;identity=null;permission=null;staffPermissions=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('feedback-control-list').replaceChildren();$('feedback-control-count').textContent='—';$('feedback-control-open').textContent='—';$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.';$('plan-form').reset();$('trial-form').reset();$('plan-existing').replaceChildren(new Option('+ Criar novo plano',''));$('trial-company').replaceChildren(new Option('Escolha uma empresa cadastrada',''));$('trial-plan').replaceChildren(new Option('Escolha um plano ativo',''));$('plan-save-status').textContent='Entre novamente para editar planos.';$('trial-save-status').textContent='Entre novamente para cadastrar testes.'}
 async function request(path,opts={}){const r=await fetch(SB+path,{...opts,headers:{apikey:PUB,'Content-Type':'application/json',...(opts.token?{Authorization:'Bearer '+opts.token}:{}),...(opts.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok){const err=new Error(data.msg||data.error_description||data.message||data.error||('Erro HTTP '+r.status));err.status=r.status;throw err}return data}
 async function accessToken(){if(!session?.access_token)throw Error('Entre novamente na CONTROL');if(Number(session.expires_at||0)>Date.now()/1000+90)return session.access_token;if(!session.refresh_token)throw Error('Sessão expirada. Entre novamente.');if(!refreshing)refreshing=(async()=>{const d=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})});storeSession(d);return d.access_token})().finally(()=>{refreshing=null});return refreshing}
 async function validateAccess(){const token=await accessToken();const user=await request('/auth/v1/user',{method:'GET',token});if(!user.id||!user.email_confirmed_at)throw Error('Confirme seu e-mail antes de acessar a CENTRAL');const rows=await request('/rest/v1/alivi_central_admins?select=user_id,role,active&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{method:'GET',token});if(!Array.isArray(rows)||rows.length!==1||rows[0].active!==true||!['owner','admin','support'].includes(rows[0].role))throw Error('Esta conta não tem autorização ativa para a ALIVI CONTROL.');
@@ -489,3 +489,53 @@ $('installed-control-version').textContent=CONTROL_VERSION;
 
 restore().then(()=>{if(identity&&permission?.active)checkControlUpdate(false)});
 
+
+
+// CONTROL 1.10: somente o OWNER pode consultar e atualizar feedbacks.
+const feedbackKindNames={suggestion:'Sugestão',bug:'Problema',feature:'Nova função',other:'Outro'};
+const feedbackStatusNames={received:'Recebido',reviewing:'Em análise',planned:'Planejado',resolved:'Resolvido',closed:'Encerrado'};
+let ctrlFeedbackRows=[];let ctrlFeedbackEmails=new Map();
+const feedbackDate=s=>{const d=new Date(s);return Number.isNaN(+d)?'—':d.toLocaleString('pt-BR')};
+function feedbackControlText(tag,value,className){const el=document.createElement(tag);if(className)el.className=className;el.textContent=value;return el}
+function renderControlFeedback(){
+ const target=$('feedback-control-list');target.replaceChildren();
+ const f=$('feedback-control-search').value.toLocaleLowerCase('pt-BR').trim();
+ const items=ctrlFeedbackRows.filter(r=>[r.body,r.user_id,r.category,r.app_version].join(' ').toLocaleLowerCase('pt-BR').includes(f));
+ $('feedback-control-count').textContent=String(ctrlFeedbackRows.length);
+ $('feedback-control-open').textContent=String(ctrlFeedbackRows.filter(r=>['received','reviewing','planned'].includes(r.status)).length);
+ if(!items.length){target.append(feedbackControlText('p','Nenhuma mensagem corresponde à pesquisa.','muted'));return}
+ for(const r of items){
+  const box=document.createElement('article');box.className='feedback-admin-item';
+  const head=document.createElement('div');head.className='feedback-head';
+  head.append(feedbackControlText('strong',(feedbackKindNames[r.category]||r.category)+' • '+feedbackDate(r.created_at)),feedbackControlText('span','Conta: '+(ctrlFeedbackEmails.get(r.user_id)||r.user_id.slice(0,8)+'…')+' • MOBILE '+(r.app_version||'?')));
+  const body=feedbackControlText('p',r.body,'feedback-body');
+  const label=feedbackControlText('label','Situação (Status)');
+  const statusSel=document.createElement('select');statusSel.className='control-input';
+  for(const [value,name] of Object.entries(feedbackStatusNames)){const o=new Option(name,value);statusSel.add(o)}statusSel.value=r.status;
+  const responseLabel=feedbackControlText('label','Resposta visível para o testador');
+  const reply=document.createElement('textarea');reply.className='control-input';reply.maxLength=1500;reply.placeholder='Resposta opcional';reply.value=r.owner_reply||'';
+  const actions=document.createElement('div');actions.className='feedback-admin-actions';const button=feedbackControlText('button','Salvar acompanhamento','primary-button');button.type='button';
+  const note=feedbackControlText('span','','feedback-admin-note');button.onclick=async()=>{
+   if(!identity||permission?.role!=='owner')return;
+   if(!window.confirm('Salvar situação e resposta deste feedback? A resposta poderá ser vista pelo testador.'))return;
+   button.disabled=true;note.textContent='Salvando...';const epoch=sessionEpoch;
+   try{const token=await accessToken();const payload={status:statusSel.value,owner_reply:reply.value.trim()||null,updated_at:new Date().toISOString()};
+    const rows=await request('/rest/v1/alivi_feedback_messages?id=eq.'+encodeURIComponent(r.id)+'&select=id,status,owner_reply,updated_at',{method:'PATCH',token,headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+    if(epoch!==sessionEpoch)return;
+    if(!Array.isArray(rows)||rows.length!==1)throw Error('Atualização não confirmada.');Object.assign(r,rows[0]);note.textContent='Acompanhamento salvo.';await loadControlFeedback();
+   }catch(e){if(epoch===sessionEpoch)note.textContent='Erro: '+e.message}finally{button.disabled=false}
+  };
+  actions.append(button,note);box.append(head,body,label,statusSel,responseLabel,reply,actions);target.append(box);
+ }
+}
+async function loadControlFeedback(){
+ if(!identity||permission?.role!=='owner')return;
+ const epoch=sessionEpoch;$('feedback-control-status').textContent='Consultando mensagens voluntárias...';
+ try{const token=await accessToken();const rows=await request('/rest/v1/alivi_feedback_messages?select=id,user_id,category,body,app_version,status,owner_reply,created_at,updated_at&order=created_at.desc&limit=100',{method:'GET',token});
+ if(epoch!==sessionEpoch)return;if(!Array.isArray(rows))throw Error('Resposta inesperada.');ctrlFeedbackRows=rows;
+ try{const users=await request('/rest/v1/rpc/alivi_central_list_clients',{method:'POST',token,body:'{}'});if(Array.isArray(users))ctrlFeedbackEmails=new Map(users.map(u=>[u.client_id,u.client_email]))}catch{ctrlFeedbackEmails=new Map()}
+ if(epoch!==sessionEpoch)return;renderControlFeedback();$('feedback-control-status').textContent=rows.length+' feedback(s) carregado(s).'+(rows.length>=100?' Consulte períodos adicionais para registros antigos.':'');
+ }catch(e){if(epoch!==sessionEpoch)return;$('feedback-control-status').textContent='Falha na consulta: '+e.message;$('feedback-control-list').replaceChildren()}
+}
+$('feedback-control-refresh').addEventListener('click',loadControlFeedback);
+$('feedback-control-search').addEventListener('input',renderControlFeedback);

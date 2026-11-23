@@ -7,8 +7,8 @@
   <meta name="description" content="ALIVI CONTROL — Administração privada do ecossistema ALIVI.">
   <title>ALIVI CONTROL • Painel administrativo 1.9</title>
   <link rel="icon" type="image/png" href="logo-alivi.png">
-  <link rel="stylesheet" href="styles.css?v=1.9.0">
-  <script src="app.js?v=1.9.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=1.10.0">
+  <script src="app.js?v=1.10.0" defer></script>
 </head>
 <body data-theme="orbital">
   <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -38,14 +38,15 @@
         <button class="nav-item" data-screen="subscriptions" type="button"><span class="nav-icon">▣</span> Planos e assinaturas</button>
         <button class="nav-item" data-screen="monitoring" type="button"><span class="nav-icon">◷</span> Consumo e custos</button>
         <button class="nav-item" id="staff-nav" data-screen="staff" type="button" hidden><span class="nav-icon">♧</span> Equipe e acessos</button>
+        <button class="nav-item" data-screen="feedback" type="button"><span class="nav-icon">✉</span> ALIVI Feedback</button>
         <button class="nav-item" data-screen="settings" type="button"><span class="nav-icon">⚙</span> Configurações</button>
       </nav>
-      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.9.0 · Acesso controlado</span></div>
+      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.10.0 · Acesso controlado</span></div>
     </aside>
     <div class="main-frame">
       <header class="topbar"><button id="mobile-menu" class="icon-button mobile-only" type="button" aria-label="Abrir menu">☰</button><div class="breadcrumb">ALIVI <span>/</span> CONTROL <span>/</span> <strong id="breadcrumb-current">Visão geral</strong></div><div class="top-actions"><span class="secure-label"><span class="live-dot"></span> Acesso protegido</span><button id="update-control-button" class="pill-button update-header" type="button" title="Verificar atualização da ALIVI CONTROL" aria-label="Verificar atualização da ALIVI CONTROL">↻ <span class="update-label">Atualizar</span></button><button id="theme-toggle" class="pill-button" type="button" title="Alternar tema">☀ <span id="theme-label">Azul Cristal</span></button><button id="logout-button" class="pill-button logout" type="button">Sair</button></div></header>
       <main class="main-content">
-        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.9</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
+        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.10</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
         <section id="screen-overview" class="screen active" aria-label="Visão geral"><p id="limited-overview-note" class="limited-overview-note" hidden>Você está no perfil <strong>Colaborador</strong>. Os módulos disponíveis no menu são determinados pelas permissões concedidas pelo proprietário. Indicadores sem acesso aparecem como “Sem acesso”.</p>
           <div class="cards three">
             <div class="metric-card"><div class="card-icon success">✓</div><div class="metric-label">Autenticação</div><div class="metric-value" id="access-status">Verificada</div><div class="metric-foot">Conta confirmada no Supabase</div></div>
@@ -211,7 +212,18 @@
             <p id="staff-save-status" class="clients-status" role="status" aria-live="polite">Nenhuma alteração efetuada.</p>
           </section>
         </section>
-        <section id="screen-settings" class="screen" aria-label="Configurações"><section class="surface-card"><div class="section-heading"><div><span class="eyebrow">PERSONALIZAÇÃO</span><h2>Aparência da ALIVI CONTROL</h2></div></div><p class="muted">Escolha o tema para este aparelho.</p><div class="theme-options"><button id="pick-orbital" type="button" class="theme-option selected"><span class="theme-preview orbital"></span><strong>Azul Orbital</strong><small>Escuro futurista</small></button><button id="pick-cristal" type="button" class="theme-option"><span class="theme-preview cristal"></span><strong>Azul Cristal</strong><small>Claro e sofisticado</small></button></div><div class="detail-block"><span>Usuário autorizado</span><strong id="settings-email">—</strong></div><p class="hint">Este painel não contém credenciais administrativas privadas e usa a mesma autenticação do Supabase da ALIVI MOBILE.</p><div class="access-summary-box" id="limited-access-box" hidden><span class="eyebrow">SEU PERFIL</span><h3>Acesso limitado de colaborador</h3><p id="limited-access-summary" class="muted">Permissões em verificação.</p><p class="hint">Se precisar de acesso a outro módulo, solicite autorização ao proprietário da ALIVI CONTROL.</p></div></section>
+        <section id="screen-feedback" class="screen" aria-label="ALIVI Feedback">
+ <section class="surface-card">
+  <div class="section-heading wrap-heading"><div><span class="eyebrow">PILOTO FECHADO</span><h2>Feedbacks recebidos</h2></div><button type="button" class="secondary-button" id="feedback-control-refresh">↻ Atualizar feedbacks</button></div>
+  <p class="muted">Somente mensagens enviadas voluntariamente por usuários da ALIVI MOBILE. Não dá acesso aos chats privados.</p>
+  <div class="client-summary two-summary"><div><span class="metric-label">Mensagens carregadas</span><strong id="feedback-control-count">—</strong></div><div><span class="metric-label">Em aberto</span><strong id="feedback-control-open">—</strong></div></div>
+  <label for="feedback-control-search" class="field-label">Buscar mensagem</label><input class="control-input" type="search" id="feedback-control-search" placeholder="Pesquisar mensagem, usuário ou versão" autocomplete="off">
+  <p class="clients-status" id="feedback-control-status" role="status">Aguardando consulta.</p>
+  <div id="feedback-control-list" class="feedback-admin-list"></div>
+  <p class="hint">Esta versão permite marcar a situação e responder ao usuário. Para informações pessoais ou sensíveis, use um canal apropriado.</p>
+ </section>
+ </section>
+ <section id="screen-settings" class="screen" aria-label="Configurações"><section class="surface-card"><div class="section-heading"><div><span class="eyebrow">PERSONALIZAÇÃO</span><h2>Aparência da ALIVI CONTROL</h2></div></div><p class="muted">Escolha o tema para este aparelho.</p><div class="theme-options"><button id="pick-orbital" type="button" class="theme-option selected"><span class="theme-preview orbital"></span><strong>Azul Orbital</strong><small>Escuro futurista</small></button><button id="pick-cristal" type="button" class="theme-option"><span class="theme-preview cristal"></span><strong>Azul Cristal</strong><small>Claro e sofisticado</small></button></div><div class="detail-block"><span>Usuário autorizado</span><strong id="settings-email">—</strong></div><p class="hint">Este painel não contém credenciais administrativas privadas e usa a mesma autenticação do Supabase da ALIVI MOBILE.</p><div class="access-summary-box" id="limited-access-box" hidden><span class="eyebrow">SEU PERFIL</span><h3>Acesso limitado de colaborador</h3><p id="limited-access-summary" class="muted">Permissões em verificação.</p><p class="hint">Se precisar de acesso a outro módulo, solicite autorização ao proprietário da ALIVI CONTROL.</p></div></section>
           <section class="surface-card module-spacer update-module" aria-label="Atualizações da ALIVI CONTROL">
             <div class="section-heading"><div><span class="eyebrow">ATUALIZAÇÕES</span><h2>Atualizar ALIVI CONTROL</h2></div><span class="info-chip">GitHub Pages</span></div>
             <p class="muted">Confira se existe uma nova versão publicada. As atualizações do código continuam sendo enviadas ao GitHub pelo administrador; este botão verifica e carrega a versão publicada.</p>

@@ -76,3 +76,8 @@ select.control-input option{background:var(--card);color:var(--text)}
 .commercial-editor .primary-button{width:auto;min-width:188px;margin:0}
 .billing-readiness{border-color:var(--accent)}
 @media(max-width:760px){.commercial-grid{grid-template-columns:1fr}.commercial-editor .primary-button{width:100%}}
+
+/* ALIVI CONTROL 1.10 — fila de feedback voluntário */
+.feedback-admin-list{display:grid;gap:12px;margin-top:14px}.feedback-admin-item{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0;display:grid;gap:9px}
+.feedback-admin-item .feedback-head{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;font-size:12px;color:var(--muted)}.feedback-admin-item .feedback-body{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;margin:0}
+.feedback-admin-item select,.feedback-admin-item textarea{width:100%;max-width:750px}.feedback-admin-item textarea{min-height:65px;resize:vertical}.feedback-admin-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.feedback-admin-actions button{min-width:165px}.feedback-admin-note{font-size:12px;color:var(--muted)}
