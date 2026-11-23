@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "ALIVI CONTROL",
-  "description": "Botão de atualização e verificação de versão publicada"
+  "description": "Gestão de equipe e permissões administrativas com verificação no servidor"
 }

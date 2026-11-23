@@ -1,24 +1,24 @@
 'use strict';
-// ALIVI CONTROL 1.6 — somente a chave PÚBLICA do Supabase no navegador.
+// ALIVI CONTROL 1.7 — somente a chave PÚBLICA do Supabase no navegador.
 // Segurança dos dados: o banco aplica RLS com base no JWT da conta autenticada.
-const CONTROL_VERSION='1.6.0';
+const CONTROL_VERSION='1.7.0';
 const SB='https://xadzckilujbydycebizj.supabase.co';
 const PUB='sb_publishable_Gm2JW3ns-WmQmFvg3JNXjA_n0VjCDpD';
 const SESSION_KEY='alivi-central-session-v1';
 const THEME_KEY='alivi-central-theme-v1';
 const $=id=>document.getElementById(id);
-let session=null,identity=null,permission=null,refreshing=null,clientRows=null,clientsLoading=null,sessionEpoch=0;
+let session=null,identity=null,permission=null,refreshing=null,clientRows=null,clientsLoading=null,sessionEpoch=0,staffRows=null,staffLoading=null;
 const cache={companies:null,plans:null,subscriptions:null,usage:null};
 const inFlight={};
-const titles={overview:['Visão geral','Sua operação, em um só lugar.','Acompanhe clientes, empresas, planos e consumo sem acessar dados privados.'],clients:['Clientes','Gestão de clientes.','Consulta protegida de contas cadastradas no Supabase, sem acesso a conversas particulares.'],companies:['Empresas','Empresas e acessos.','Cadastre empresas e confira os vínculos autorizados nesta conta.'],subscriptions:['Planos e assinaturas','Planos e assinaturas.','Acompanhamento comercial sem cobranças reais nesta versão.'],monitoring:['Consumo e custos','Indicadores de consumo.','Eventos registrados pela operação, não faturas do provedor de IA.'],settings:['Configurações','Seu painel, suas escolhas.','Personalize a aparência da ALIVI CONTROL neste aparelho.']};
+const titles={overview:['Visão geral','Sua operação, em um só lugar.','Acompanhe clientes, empresas, planos e consumo sem acessar dados privados.'],clients:['Clientes','Gestão de clientes.','Consulta protegida de contas cadastradas no Supabase, sem acesso a conversas particulares.'],companies:['Empresas','Empresas e acessos.','Cadastre empresas e confira os vínculos autorizados nesta conta.'],subscriptions:['Planos e assinaturas','Planos e assinaturas.','Acompanhamento comercial sem cobranças reais nesta versão.'],monitoring:['Consumo e custos','Indicadores de consumo.','Eventos registrados pela operação, não faturas do provedor de IA.'],staff:['Equipe e acessos','Acesso dos seus colaboradores.','Defina permissões administrativas restritas, sem acesso a conversas particulares.'],settings:['Configurações','Seu painel, suas escolhas.','Personalize a aparência da ALIVI CONTROL neste aparelho.']};
 function status(message,error=false){$('login-status').textContent=message;$('login-status').classList.toggle('error',error)}
 function setTheme(name){const theme=name==='cristal'?'cristal':'orbital';document.body.dataset.theme=theme;localStorage.setItem(THEME_KEY,theme);$('theme-label').textContent=theme==='cristal'?'Azul Orbital':'Azul Cristal';$('theme-toggle').firstChild.textContent=theme==='cristal'?'☾ ':'☀ ';$('pick-orbital').classList.toggle('selected',theme==='orbital');$('pick-cristal').classList.toggle('selected',theme==='cristal')}
 function showAuth(message='Somente contas administrativas autorizadas.',error=false){$('panel-view').hidden=true;$('auth-view').hidden=false;status(message,error)}
-function showPanel(){if(!identity||!permission?.active)throw Error('Sem autorização administrativa');$('auth-view').hidden=true;$('panel-view').hidden=false;const role=permission.role==='owner'?'Proprietário':permission.role==='admin'?'Administrador':'Suporte';$('access-role').textContent=role;$('account-role').textContent=role;$('account-email').textContent=identity.email||'Conta autorizada';$('settings-email').textContent=identity.email||'Conta autorizada';navigate('overview')}
-function navigate(screen){const entry=titles[screen];if(!entry)return;document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+screen));document.querySelectorAll('[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===screen));$('breadcrumb-current').textContent=entry[0];$('page-heading').textContent=entry[1];$('page-description').textContent=entry[2];closeMenu();if(screen==='clients'&&clientRows===null)loadClients();if(screen==='companies')loadCompanies();if(screen==='subscriptions')loadCommercial();if(screen==='monitoring')loadUsage();if(screen==='overview')loadOverview()}
+function showPanel(){if(!identity||!permission?.active)throw Error('Sem autorização administrativa');$('auth-view').hidden=true;$('panel-view').hidden=false;const role=permission.role==='owner'?'Proprietário':permission.role==='admin'?'Administrador':'Suporte';$('access-role').textContent=role;$('account-role').textContent=role;$('account-email').textContent=identity.email||'Conta autorizada';$('settings-email').textContent=identity.email||'Conta autorizada';$('staff-nav').hidden=permission.role!=='owner';navigate('overview')}
+function navigate(screen){const entry=titles[screen];if(!entry)return;if(screen==='staff'&&permission?.role!=='owner')return;document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+screen));document.querySelectorAll('[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===screen));$('breadcrumb-current').textContent=entry[0];$('page-heading').textContent=entry[1];$('page-description').textContent=entry[2];closeMenu();if(screen==='clients'&&clientRows===null)loadClients();if(screen==='companies')loadCompanies();if(screen==='subscriptions')loadCommercial();if(screen==='monitoring')loadUsage();if(screen==='overview')loadOverview();if(screen==='staff')loadStaff()}
 function closeMenu(){$('sidebar').classList.remove('open');$('drawer-overlay').hidden=true}
 function storeSession(data){session=data;localStorage.setItem(SESSION_KEY,JSON.stringify(data))}
-function clearSession(){session=null;identity=null;permission=null;refreshing=null;clientRows=null;clientsLoading=null;sessionEpoch++;Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.'}
+function clearSession(){session=null;identity=null;permission=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.'}
 async function request(path,opts={}){const r=await fetch(SB+path,{...opts,headers:{apikey:PUB,'Content-Type':'application/json',...(opts.token?{Authorization:'Bearer '+opts.token}:{}),...(opts.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok){const err=new Error(data.msg||data.error_description||data.message||data.error||('Erro HTTP '+r.status));err.status=r.status;throw err}return data}
 async function accessToken(){if(!session?.access_token)throw Error('Entre novamente na CONTROL');if(Number(session.expires_at||0)>Date.now()/1000+90)return session.access_token;if(!session.refresh_token)throw Error('Sessão expirada. Entre novamente.');if(!refreshing)refreshing=(async()=>{const d=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})});storeSession(d);return d.access_token})().finally(()=>{refreshing=null});return refreshing}
 async function validateAccess(){const token=await accessToken();const user=await request('/auth/v1/user',{method:'GET',token});if(!user.id||!user.email_confirmed_at)throw Error('Confirme seu e-mail antes de acessar a CENTRAL');const rows=await request('/rest/v1/alivi_central_admins?select=user_id,role,active&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{method:'GET',token});if(!Array.isArray(rows)||rows.length!==1||rows[0].active!==true||!['owner','admin'].includes(rows[0].role))throw Error('Esta conta não tem autorização ativa para a ALIVI CONTROL.');identity=user;permission=rows[0];return true}
@@ -201,6 +201,77 @@ $('company-form').addEventListener('submit',async e=>{
   $('company-form').reset();
   cache.companies=null;await loadCompanies(true);await loadOverview(true);
  }catch(err){if(checkEpoch(epoch))textStatus('company-create-status','Não foi possível cadastrar: '+err.message)}finally{b.disabled=false}
+});
+
+// ALIVI CONTROL 1.7 — equipe: a decisão de acesso é SEMPRE do RPC protegido no Supabase.
+// Nunca expor service_role no navegador. As permissões ainda não habilitam login do perfil support.
+const staffFlags=[['staff-clients','view_clients','Clientes'],['staff-companies','view_companies','Empresas'],['staff-plans','view_plans','Planos'],['staff-subs','view_subscriptions','Assinaturas'],['staff-usage','view_usage','Consumo e custos']];
+function staffStatus(msg){$('staff-status').textContent=msg}
+function clearStaffForm(){
+ $('staff-form').reset();$('staff-email').readOnly=false;$('staff-save-status').textContent='Nenhuma alteração efetuada.';
+}
+function renderStaff(){
+ const rows=Array.isArray(staffRows)?staffRows:[];
+ const body=$('staff-table-body');body.replaceChildren();
+ if(!rows.length){escTable('staff-table-body',5,'Nenhuma conta administrativa encontrada.');return}
+ for(const r of rows){
+  const tr=document.createElement('tr');
+  addCells(tr,[r.staff_email||'—',r.staff_role==='owner'?'Proprietário':r.staff_role==='admin'?'Administrador':'Suporte',r.staff_active?'Ativa':'Inativa']);
+  const mod=document.createElement('td');mod.textContent=staffFlags.filter(x=>r[x[1]]===true).map(x=>x[2]).join(', ')||'Nenhum';tr.appendChild(mod);
+  const actions=document.createElement('td');
+  if(r.staff_role==='support'){
+   const b=document.createElement('button');b.type='button';b.className='secondary-button';b.textContent='Editar';
+   b.addEventListener('click',()=>{
+    $('staff-email').value=r.staff_email||'';
+    $('staff-active').checked=!!r.staff_active;
+    for(const [id,key] of staffFlags)$(id).checked=!!r[key];
+    $('staff-save-status').textContent='Editando permissões deste colaborador. Salvar fará alteração real.';
+    $('staff-email').focus();$('staff-form').scrollIntoView({behavior:'smooth',block:'center'});
+   });actions.appendChild(b);
+  }else{actions.textContent='Protegido'}
+  tr.appendChild(actions);body.appendChild(tr);
+ }
+}
+async function loadStaff(){
+ if(permission?.role!=='owner'){staffStatus('Apenas o proprietário consulta a equipe.');return}
+ if(staffLoading)return staffLoading;
+ const epoch=sessionEpoch;const btn=$('staff-refresh');btn.disabled=true;staffStatus('Consultando equipe autorizada...');
+ staffLoading=(async()=>{
+  try{
+   const token=await accessToken();
+   const rows=await request('/rest/v1/rpc/alivi_control_list_staff',{method:'POST',token,body:'{}'});
+   if(!checkEpoch(epoch)||permission?.role!=='owner')return;
+   if(!Array.isArray(rows))throw Error('Resposta inesperada da consulta de equipe');
+   staffRows=rows;renderStaff();
+   staffStatus(`${rows.length} conta(s) administrativa(s) retornada(s), incluindo o proprietário.`);
+  }catch(e){if(!checkEpoch(epoch))return;staffRows=null;escTable('staff-table-body',5,'Falha na consulta de equipe.');staffStatus('Erro: '+String(e.message||e))}
+  finally{if(epoch===sessionEpoch)btn.disabled=false}
+ })();
+ try{await staffLoading}finally{staffLoading=null}
+}
+$('staff-refresh').addEventListener('click',loadStaff);
+$('staff-clear').addEventListener('click',clearStaffForm);
+$('staff-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(permission?.role!=='owner'){textStatus('staff-save-status','Somente o proprietário pode alterar a equipe.');return}
+ const email=$('staff-email').value.trim();const active=$('staff-active').checked;
+ const flags=staffFlags.map(x=>$(x[0]).checked);
+ if(!email||!$('staff-email').checkValidity())return;
+ const summary=staffFlags.filter((x,i)=>active&&flags[i]).map(x=>x[2]).join(', ')||'Nenhum módulo';
+ const action=active?'AUTORIZAR':'DESATIVAR';
+ if(!window.confirm(`${action} a conta ${email} na ALIVI CONTROL?\nMódulos de leitura selecionados: ${active?summary:'nenhum'}\n\nEsta operação modifica o Supabase. A entrada de suporte no painel ainda não está liberada nesta versão.`))return;
+ const epoch=sessionEpoch;const btn=$('staff-save');btn.disabled=true;
+ textStatus('staff-save-status','Salvando a autorização no Supabase...');
+ try{
+  const token=await accessToken();
+  await request('/rest/v1/rpc/alivi_control_set_staff',{method:'POST',token,body:JSON.stringify({
+   p_email:email,p_active:active,p_clients:active&&flags[0],p_companies:active&&flags[1],p_plans:active&&flags[2],p_subscriptions:active&&flags[3],p_usage:active&&flags[4]
+  })});
+  if(!checkEpoch(epoch))return;
+  clearStaffForm();textStatus('staff-save-status',active?'Autorização salva. O acesso do colaborador ainda aguarda a etapa de segurança por módulo.':'Acesso administrativo desativado.');
+  await loadStaff();
+ }catch(err){if(checkEpoch(epoch))textStatus('staff-save-status','Não foi possível alterar: '+String(err.message||err))}
+ finally{btn.disabled=false}
 });
 
 // ALIVI CONTROL 1.6 — atualização do painel (GitHub Pages).

@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1b3955">
   <meta name="description" content="ALIVI CONTROL — Administração privada do ecossistema ALIVI.">
-  <title>ALIVI CONTROL • Painel administrativo 1.6</title>
+  <title>ALIVI CONTROL • Painel administrativo 1.7</title>
   <link rel="icon" type="image/png" href="logo-alivi.png">
-  <link rel="stylesheet" href="styles.css?v=1.6.0">
-  <script src="app.js?v=1.6.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=1.7.0">
+  <script src="app.js?v=1.7.0" defer></script>
 </head>
 <body data-theme="orbital">
   <div class="ambient ambient-one" aria-hidden="true"></div>
   <div class="ambient ambient-two" aria-hidden="true"></div>
   <main id="auth-view" class="auth-wrap">
     <section class="auth-card" aria-label="Acesso administrativo">
-      <div class="brand brand-auth"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CONTROL</em></b><small>Controle administrativo · versão 1.6</small></div></div>
+      <div class="brand brand-auth"><span class="brand-mark"><img src="logo-alivi.png" alt="Marca ALIVI"></span><div><b>ALIVI <em>CONTROL</em></b><small>Controle administrativo · versão 1.7</small></div></div>
       <div class="auth-heading"><span class="overline">ACESSO RESTRITO</span><h1>Seu centro de comando.</h1><p>Entre com a mesma conta autorizada no Supabase. O sistema confirma sua permissão antes de abrir o painel.</p></div>
       <form id="login-form" autocomplete="on">
         <label for="email">E-mail</label><input id="email" type="email" required autocomplete="username" placeholder="Seu e-mail da ALIVI">
@@ -37,14 +37,15 @@
         <button class="nav-item" data-screen="companies" type="button"><span class="nav-icon">▤</span> Empresas</button>
         <button class="nav-item" data-screen="subscriptions" type="button"><span class="nav-icon">▣</span> Planos e assinaturas</button>
         <button class="nav-item" data-screen="monitoring" type="button"><span class="nav-icon">◷</span> Consumo e custos</button>
+        <button class="nav-item" id="staff-nav" data-screen="staff" type="button" hidden><span class="nav-icon">♧</span> Equipe e acessos</button>
         <button class="nav-item" data-screen="settings" type="button"><span class="nav-icon">⚙</span> Configurações</button>
       </nav>
-      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.6.0 · Acesso controlado</span></div>
+      <div class="sidebar-bottom"><a href="https://alivi-ia.github.io/alivi-mobile/" target="_blank" rel="noopener noreferrer">↗ Abrir ALIVI MOBILE</a><span>CONTROL v1.7.0 · Acesso controlado</span></div>
     </aside>
     <div class="main-frame">
       <header class="topbar"><button id="mobile-menu" class="icon-button mobile-only" type="button" aria-label="Abrir menu">☰</button><div class="breadcrumb">ALIVI <span>/</span> CONTROL <span>/</span> <strong id="breadcrumb-current">Visão geral</strong></div><div class="top-actions"><span class="secure-label"><span class="live-dot"></span> Acesso protegido</span><button id="update-control-button" class="pill-button update-header" type="button" title="Verificar atualização da ALIVI CONTROL" aria-label="Verificar atualização da ALIVI CONTROL">↻ <span class="update-label">Atualizar</span></button><button id="theme-toggle" class="pill-button" type="button" title="Alternar tema">☀ <span id="theme-label">Azul Cristal</span></button><button id="logout-button" class="pill-button logout" type="button">Sair</button></div></header>
       <main class="main-content">
-        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.6</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
+        <div class="hero"><div><span class="overline">ALIVI CONTROL 1.7</span><h1 id="page-heading">Sua operação, em um só lugar.</h1><p id="page-description">Acompanhe clientes, empresas, planos e uso da ALIVI em um painel protegido.</p></div><div class="hero-mark" aria-hidden="true"><img src="logo-alivi.png" alt=""></div></div>
         <section id="screen-overview" class="screen active" aria-label="Visão geral">
           <div class="cards three">
             <div class="metric-card"><div class="card-icon success">✓</div><div class="metric-label">Autenticação</div><div class="metric-value" id="access-status">Verificada</div><div class="metric-foot">Conta confirmada no Supabase</div></div>
@@ -143,12 +144,46 @@
             <p class="hint">Consulta limitada aos 200 eventos mais recentes. O total exibido não é a fatura global do provedor de IA.</p>
           </section>
         </section>
+        <section id="screen-staff" class="screen" aria-label="Equipe e acessos">
+          <section class="surface-card">
+            <div class="section-heading wrap-heading">
+              <div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Equipe administrativa da ALIVI CONTROL</h2></div>
+              <button id="staff-refresh" type="button" class="secondary-button">↻ Atualizar equipe</button>
+            </div>
+            <p class="muted">Aqui você administra colaboradores da plataforma ALIVI. Isso <strong>não</strong> concede acesso aos painéis de cozinha, caixa ou atendimento das empresas clientes. Somente contas já existentes e com e-mail confirmado no Supabase poderão receber permissões.</p>
+            <p class="clients-status" id="staff-status" role="status" aria-live="polite">Aguardando consulta protegida.</p>
+            <div class="clients-table-wrap"><table class="clients-table"><thead><tr><th scope="col">Conta</th><th scope="col">Perfil</th><th scope="col">Situação</th><th scope="col">Módulos autorizados</th><th scope="col">Ação</th></tr></thead>
+              <tbody id="staff-table-body"><tr><td class="clients-empty" colspan="5">Nenhuma informação carregada.</td></tr></tbody></table></div>
+            <p class="hint">O proprietário não pode ser alterado por este formulário. Os colaboradores receberão o perfil limitado <strong>Suporte</strong>. A consulta e as mudanças são verificadas pelo Supabase.</p>
+          </section>
+          <section class="surface-card module-spacer">
+            <div class="section-heading wrap-heading"><div><span class="eyebrow">AUTORIZAÇÃO CONTROLADA</span><h2>Autorizar ou desativar colaborador</h2></div><span class="info-chip">Alteração real</span></div>
+            <form id="staff-form" class="staff-editor">
+              <label class="field-label" for="staff-email">E-mail já cadastrado e confirmado no Supabase</label>
+              <input type="email" id="staff-email" required autocomplete="off" class="control-input" placeholder="colaborador@exemplo.com" maxlength="254">
+              <label class="staff-toggle"><input id="staff-active" type="checkbox" checked> <span>Conta administrativa ativa</span></label>
+              <fieldset class="staff-permissions">
+                <legend>Permitir visualização de módulos</legend>
+                <div class="staff-checks">
+                  <label><input type="checkbox" id="staff-clients"> Clientes</label>
+                  <label><input type="checkbox" id="staff-companies"> Empresas</label>
+                  <label><input type="checkbox" id="staff-plans"> Planos</label>
+                  <label><input type="checkbox" id="staff-subs"> Assinaturas</label>
+                  <label><input type="checkbox" id="staff-usage"> Consumo e custos</label>
+                </div>
+              </fieldset>
+              <p class="hint">Nesta etapa, as permissões são <strong>registradas</strong>, mas a entrada dos colaboradores no painel permanece bloqueada até termos validado as regras específicas de leitura no servidor para cada módulo. Nenhuma permissão financeira ou de alteração é concedida aqui.</p>
+              <div class="staff-actions"><button id="staff-save" type="submit" class="primary-button">Salvar autorização</button><button id="staff-clear" type="button" class="secondary-button">Limpar formulário</button></div>
+            </form>
+            <p id="staff-save-status" class="clients-status" role="status" aria-live="polite">Nenhuma alteração efetuada.</p>
+          </section>
+        </section>
         <section id="screen-settings" class="screen" aria-label="Configurações"><section class="surface-card"><div class="section-heading"><div><span class="eyebrow">PERSONALIZAÇÃO</span><h2>Aparência da ALIVI CONTROL</h2></div></div><p class="muted">Escolha o tema para este aparelho.</p><div class="theme-options"><button id="pick-orbital" type="button" class="theme-option selected"><span class="theme-preview orbital"></span><strong>Azul Orbital</strong><small>Escuro futurista</small></button><button id="pick-cristal" type="button" class="theme-option"><span class="theme-preview cristal"></span><strong>Azul Cristal</strong><small>Claro e sofisticado</small></button></div><div class="detail-block"><span>Usuário autorizado</span><strong id="settings-email">—</strong></div><p class="hint">Este painel não contém credenciais administrativas privadas e usa a mesma autenticação do Supabase da ALIVI MOBILE.</p></section>
           <section class="surface-card module-spacer update-module" aria-label="Atualizações da ALIVI CONTROL">
             <div class="section-heading"><div><span class="eyebrow">ATUALIZAÇÕES</span><h2>Atualizar ALIVI CONTROL</h2></div><span class="info-chip">GitHub Pages</span></div>
             <p class="muted">Confira se existe uma nova versão publicada. As atualizações do código continuam sendo enviadas ao GitHub pelo administrador; este botão verifica e carrega a versão publicada.</p>
             <div class="update-version-grid">
-              <div><span>Versão instalada</span><strong id="installed-control-version">1.6.0</strong></div>
+              <div><span>Versão instalada</span><strong id="installed-control-version">1.7.0</strong></div>
               <div><span>Versão publicada</span><strong id="published-control-version">A verificar</strong></div>
             </div>
             <div class="update-buttons">
