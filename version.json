@@ -1,5 +1,6 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "ALIVI CONTROL",
-  "description": "Gestão de equipe e permissões administrativas com verificação no servidor"
+  "released": "2026-11-23",
+  "notes": "Acesso de colaboradores por modulo com RLS no Supabase; sem mudancas na ALIVI MOBILE."
 }

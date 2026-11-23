@@ -59,3 +59,12 @@ select.control-input option{background:var(--card);color:var(--text)}
 .staff-actions .primary-button{margin:0;width:auto;min-width:210px}
 #staff-table-body td:nth-child(4){min-width:220px;max-width:440px}
 @media(max-width:760px){.staff-checks{grid-template-columns:1fr}.staff-actions{flex-direction:column;align-items:stretch}.staff-actions .primary-button,.staff-actions .secondary-button{width:100%}}
+
+/* ALIVI CONTROL 1.8 — acesso de colaboradores por modulo */
+[hidden]{display:none!important}
+.limited-overview-note{padding:14px 17px;background:var(--alert);border:1px solid var(--border);border-radius:12px;margin:0 0 18px;color:var(--muted);font-size:12px;line-height:1.7}
+.limited-overview-note strong{color:var(--text)}
+.access-summary-box{margin-top:17px;padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--card2)}
+.access-summary-box h3{font-size:16px;margin:8px 0 10px}
+.access-summary-box .muted{margin:0}
+.stat-grid strong{font-size:clamp(12px,1.7vw,19px)}
