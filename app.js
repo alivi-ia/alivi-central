@@ -1,7 +1,7 @@
 'use strict';
 // ALIVI CONTROL 1.9 — somente a chave PÚBLICA do Supabase no navegador.
 // Segurança dos dados: o banco aplica RLS com base no JWT da conta autenticada.
-const CONTROL_VERSION='1.10.0';
+const CONTROL_VERSION='1.11.1';
 const SB='https://xadzckilujbydycebizj.supabase.co';
 const PUB='sb_publishable_Gm2JW3ns-WmQmFvg3JNXjA_n0VjCDpD';
 const SESSION_KEY='alivi-central-session-v1';
@@ -62,7 +62,7 @@ function navigate(screen){
  if(screen==='subscriptions')loadCommercial();
  if(screen==='monitoring')loadUsage();
  if(screen==='overview')loadOverview();
- if(screen==='staff')loadStaff();if(screen==='feedback')loadControlFeedback();if(screen==='announcements')void loadAnnouncements();
+ if(screen==='staff')loadStaff();if(screen==='feedback')loadControlFeedback();if(screen==='announcements'){void loadAnnouncements();void loadInternalCommunications();}
 }
 function closeMenu(){$('sidebar').classList.remove('open');$('drawer-overlay').hidden=true}
 function storeSession(data){session=data;localStorage.setItem(SESSION_KEY,JSON.stringify(data))}
@@ -486,8 +486,10 @@ $('reload-control-button').addEventListener('click',()=>{
  if(window.confirm('Recarregar a ALIVI CONTROL? Formulários não enviados serão descartados.'))refreshControl();
 });
 $('installed-control-version').textContent=CONTROL_VERSION;
+document.title='ALIVI CONTROL • Painel administrativo '+CONTROL_VERSION;
 
 let annRecipients=[], annRows=[], annBusy=false, annEnabled=false, annTestEnabled=false, annDraft=null, annLoaded=false;
+let internalDraft=null, internalBusy=false, internalLoading=false;
 initAnnouncements();
 restore().then(()=>{if(identity&&permission?.active)checkControlUpdate(false)});
 
@@ -548,21 +550,31 @@ function annOwner(){return !!identity&&permission?.active===true&&permission.rol
 function resetAnnouncements(){
  annRecipients=[];annRows=[];annBusy=false;annEnabled=false;annTestEnabled=false;annDraft=null;annLoaded=false;
  if(!$('ann-form'))return;
+ resetInternalCommunications();
  $('ann-form').reset();$('ann-audience').value='test';$('ann-targets').replaceChildren();
  $('ann-list').replaceChildren();$('ann-diagnostic').replaceChildren();$('ann-status').textContent='Entre como proprietário.';
  $('ann-count').textContent='—';$('ann-devices').textContent='—';$('ann-nav').hidden=true;annControls();
 }
 function initAnnouncements(){
- titles.announcements=['Comunicados','Central de comunicados.','Prepare avisos e acompanhe os registros destinados a usuários com notificações habilitadas.'];
+ titles.announcements=['Comunicados','Central de comunicados.','Publique comunicados internos para todas as contas confirmadas e envie notificações externas quando desejar.'];
  const nav=document.createElement('button');nav.type='button';nav.id='ann-nav';nav.className='nav-item';nav.dataset.screen='announcements';nav.hidden=true;
  nav.innerHTML='<span class="nav-icon">✉</span> Comunicados';
  $('main-nav').insertBefore(nav,$('main-nav').querySelector('[data-screen="settings"]'));
  nav.addEventListener('click',()=>navigate('announcements'));
  const screen=document.createElement('section');screen.id='screen-announcements';screen.className='screen';screen.setAttribute('aria-label','Comunicados');
  screen.innerHTML=`<section class="surface-card">
- <div class="section-heading wrap-heading"><div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Central de comunicados</h2></div><button id="ann-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
+ <div class="section-heading wrap-heading"><div><span class="eyebrow">TODOS OS CLIENTES CONFIRMADOS</span><h2>Comunicado interno</h2></div><button id="internal-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
+ <p class="muted">Publicação dentro da sua ALIVI. Não exige Firebase. O comunicado ficará disponível para contas com e-mail confirmado, inclusive novos clientes, na MOBILE compatível. Não é uma notificação externa.</p>
+ <form id="internal-form" class="commercial-editor">
+ <label for="internal-title" class="field-label">Título</label><input id="internal-title" class="control-input" maxlength="100" required placeholder="Ex.: Novidades na sua ALIVI">
+ <label for="internal-body" class="field-label">Mensagem</label><textarea id="internal-body" class="control-input" maxlength="500" required rows="5" placeholder="Escreva ou cole seu comunicado"></textarea>
+ <div class="staff-actions"><button id="internal-save" type="submit" class="primary-button">Publicar para todos os clientes</button></div></form>
+ <p id="internal-status" class="clients-status" role="status" aria-live="polite">Consultando publicações internas...</p>
+ <details class="module-spacer"><summary>Histórico de publicações internas (até 50)</summary><div id="internal-list" class="feedback-admin-list"></div></details>
+ </section><section class="surface-card module-spacer">
+ <div class="section-heading wrap-heading"><div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Notificações externas (Firebase)</h2></div><button id="ann-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
  <p id="ann-mode" class="muted">Fase de preparação: nenhum disparo de notificações está habilitado.</p>
- <div class="client-summary two-summary"><div><span class="metric-label">Contas habilitadas</span><strong id="ann-count">—</strong></div><div><span class="metric-label">Aparelhos habilitados</span><strong id="ann-devices">—</strong></div></div>
+ <div class="client-summary two-summary"><div><span class="metric-label">Contas habilitadas para push</span><strong id="ann-count">—</strong></div><div><span class="metric-label">Aparelhos habilitados para push</span><strong id="ann-devices">—</strong></div></div>
  <details class="module-spacer"><summary>Conferir todos os clientes e notificações</summary><div id="ann-diagnostic" class="feedback-admin-list"></div></details>
  <form id="ann-form" class="commercial-editor">
  <label for="ann-audience" class="field-label">Destinatários</label><select id="ann-audience" class="control-input"><option value="test">Somente minha conta (teste)</option><option value="selected">Clientes selecionados</option><option value="all">Todos os clientes habilitados</option></select>
@@ -573,9 +585,12 @@ function initAnnouncements(){
  <div id="ann-date-wrap" hidden><label for="ann-date" class="field-label">Data e hora (horário deste aparelho)</label><input id="ann-date" type="datetime-local" class="control-input"></div>
  <div class="staff-actions"><button id="ann-save" class="primary-button" type="submit" disabled>Registrar teste</button></div></form>
  <p id="ann-status" class="clients-status" role="status" aria-live="polite">Consultando serviço protegido...</p></section>
- <section class="surface-card module-spacer"><div class="section-heading"><div><span class="eyebrow">HISTÓRICO</span><h2>Comunicados registrados</h2></div></div><div id="ann-list" class="feedback-admin-list"></div></section>`;
+ <section class="surface-card module-spacer"><div class="section-heading"><div><span class="eyebrow">HISTÓRICO</span><h2>Histórico de notificações externas</h2></div></div><div id="ann-list" class="feedback-admin-list"></div></section>`;
  document.querySelector('.main-content').append(screen);
  $('ann-refresh').onclick=()=>void loadAnnouncements();
+ $('internal-refresh').onclick=()=>void loadInternalCommunications();
+ $('internal-form').addEventListener('submit',publishInternalCommunication);
+ $('internal-form').addEventListener('input',()=>{internalDraft=null;});
  $('ann-audience').onchange=annControls;$('ann-when').onchange=annControls;$('ann-targets').onchange=annControls;
  $('ann-form').addEventListener('input',()=>{annDraft=null;});
  $('ann-form').addEventListener('submit',saveAnnouncement);
@@ -692,4 +707,61 @@ async function saveAnnouncement(event){
    else $('ann-status').textContent='Falha ao registrar: '+e.message;
   }
  }finally{if(checkEpoch(epoch)){annBusy=false;annControls();renderAnnouncements()}}
+}
+
+
+// CONTROL 1.11.1 — publicação interna via RPC, independente do Firebase.
+function internalControls(){
+ for(const id of ['internal-title','internal-body','internal-save','internal-refresh'])$(id).disabled=internalBusy||internalLoading;
+}
+function resetInternalCommunications(){
+ internalDraft=null;internalBusy=false;internalLoading=false;
+ if(!$('internal-form'))return;
+ $('internal-form').reset();$('internal-list').replaceChildren();
+ $('internal-status').textContent='Entre como proprietário.';internalControls();
+}
+async function internalRpc(name,payload,epoch){
+ if(!checkEpoch(epoch)||!annOwner())throw Error('Entre como proprietário.');
+ const token=await accessToken();
+ if(!checkEpoch(epoch)||!annOwner())throw Error('Sessão alterada.');
+ const data=await request('/rest/v1/rpc/'+name,{method:'POST',token,body:JSON.stringify(payload)});
+ if(!checkEpoch(epoch)||!annOwner())throw Error('Sessão alterada.');
+ return data;
+}
+function renderInternalCommunications(rows){
+ const root=$('internal-list');root.replaceChildren();
+ if(!rows.length){root.append(feedbackControlText('p','Nenhum comunicado interno publicado.','muted'));return}
+ for(const r of rows){
+  const item=document.createElement('article');item.className='feedback-admin-item';
+  item.append(feedbackControlText('strong',r.title),feedbackControlText('p',r.body,'feedback-body'),feedbackControlText('p','Publicado em '+clientDate(r.published_at),'muted'));root.append(item);
+ }
+}
+async function loadInternalCommunications(){
+ if(!annOwner()||internalBusy||internalLoading)return;
+ const epoch=sessionEpoch;internalLoading=true;internalControls();
+ $('internal-status').textContent='Consultando publicações internas...';
+ try{
+  const rows=await internalRpc('alivi_mobile_list_communications',{},epoch);
+  if(!Array.isArray(rows))throw Error('Resposta inesperada do servidor.');
+  renderInternalCommunications(rows);
+  $('internal-status').textContent=rows.length+' publicação(ões) interna(s) na consulta. A leitura exige a MOBILE compatível.';
+ }catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent='Falha na consulta: '+e.message}
+ finally{if(checkEpoch(epoch)){internalLoading=false;internalControls()}}
+}
+async function publishInternalCommunication(event){
+ event.preventDefault();if(!annOwner()||internalBusy||internalLoading)return;
+ const title=$('internal-title').value.trim(),body=$('internal-body').value.trim();
+ if(!title||title.length>100||!body||body.length>500){$('internal-status').textContent='Confira título e mensagem.';return}
+ if(!confirm('Publicar este comunicado DENTRO DA ALIVI para todas as contas confirmadas, inclusive novos clientes?\n\n'+title+'\n'+body+'\n\nNão será enviado push externo por este botão.'))return;
+ if(!internalDraft||internalDraft.p_title!==title||internalDraft.p_body!==body)internalDraft={p_id:crypto.randomUUID(),p_title:title,p_body:body};
+ const epoch=sessionEpoch;const draft=internalDraft;internalBusy=true;internalControls();
+ $('internal-status').textContent='Publicando no Supabase...';
+ try{
+  const row=await internalRpc('alivi_control_publish_communication',draft,epoch);
+  if(row?.id!==draft.p_id||!row.published_at)throw Error('Publicação não confirmada.');
+  internalDraft=null;$('internal-form').reset();
+  $('internal-status').textContent='Publicado no Supabase para todas as contas confirmadas. A leitura depende da MOBILE compatível. Nenhum push externo foi enviado.';
+  try{const rows=await internalRpc('alivi_mobile_list_communications',{},epoch);if(Array.isArray(rows))renderInternalCommunications(rows)}catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent+=' Histórico não atualizado: '+e.message;}
+ }catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent='Publicação não confirmada: '+e.message+'. Confira o histórico. Repetir com o mesmo texto nesta tela reutiliza o identificador.';}
+ finally{if(checkEpoch(epoch)){internalBusy=false;internalControls()}}
 }
