@@ -1,4 +1,4 @@
 {
-  "version": "1.10.0",
-  "notes": "ALIVI Feedback: recebimento voluntário, triagem e respostas"
+  "version": "1.11.1",
+  "notes": "Comunicados internos para clientes e notificações externas pelo Firebase."
 }
