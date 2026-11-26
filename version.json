@@ -1,4 +1,4 @@
 {
-  "version": "1.11.1",
-  "notes": "Comunicados internos para clientes e notificações externas pelo Firebase."
+  "version": "1.11.2",
+  "notes": "Comunicado interno e notificação externa em um único envio, com resultados separados."
 }

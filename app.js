@@ -1,7 +1,7 @@
 'use strict';
 // ALIVI CONTROL 1.9 — somente a chave PÚBLICA do Supabase no navegador.
 // Segurança dos dados: o banco aplica RLS com base no JWT da conta autenticada.
-const CONTROL_VERSION='1.11.1';
+const CONTROL_VERSION='1.11.2';
 const SB='https://xadzckilujbydycebizj.supabase.co';
 const PUB='sb_publishable_Gm2JW3ns-WmQmFvg3JNXjA_n0VjCDpD';
 const SESSION_KEY='alivi-central-session-v1';
@@ -556,23 +556,23 @@ function resetAnnouncements(){
  $('ann-count').textContent='—';$('ann-devices').textContent='—';$('ann-nav').hidden=true;annControls();
 }
 function initAnnouncements(){
- titles.announcements=['Comunicados','Central de comunicados.','Publique comunicados internos para todas as contas confirmadas e envie notificações externas quando desejar.'];
+ titles.announcements=['Comunicados','Central de comunicados.','Envie uma vez: publique para todas as contas confirmadas e notifique os aparelhos autorizados.'];
  const nav=document.createElement('button');nav.type='button';nav.id='ann-nav';nav.className='nav-item';nav.dataset.screen='announcements';nav.hidden=true;
  nav.innerHTML='<span class="nav-icon">✉</span> Comunicados';
  $('main-nav').insertBefore(nav,$('main-nav').querySelector('[data-screen="settings"]'));
  nav.addEventListener('click',()=>navigate('announcements'));
  const screen=document.createElement('section');screen.id='screen-announcements';screen.className='screen';screen.setAttribute('aria-label','Comunicados');
  screen.innerHTML=`<section class="surface-card">
- <div class="section-heading wrap-heading"><div><span class="eyebrow">TODOS OS CLIENTES CONFIRMADOS</span><h2>Comunicado interno</h2></div><button id="internal-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
- <p class="muted">Publicação dentro da sua ALIVI. Não exige Firebase. O comunicado ficará disponível para contas com e-mail confirmado, inclusive novos clientes, na MOBILE compatível. Não é uma notificação externa.</p>
+ <div class="section-heading wrap-heading"><div><span class="eyebrow">TODOS OS CLIENTES CONFIRMADOS</span><h2>Comunicado para todos</h2></div><button id="internal-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
+ <p class="muted">Uma única publicação dentro da sua ALIVI, para todas as contas confirmadas, inclusive novos clientes. Também tenta enviar uma notificação externa aos aparelhos com Firebase habilitado, respeitando o modo silencioso e o limite piloto de 20 aparelhos.</p>
  <form id="internal-form" class="commercial-editor">
  <label for="internal-title" class="field-label">Título</label><input id="internal-title" class="control-input" maxlength="100" required placeholder="Ex.: Novidades na sua ALIVI">
  <label for="internal-body" class="field-label">Mensagem</label><textarea id="internal-body" class="control-input" maxlength="500" required rows="5" placeholder="Escreva ou cole seu comunicado"></textarea>
- <div class="staff-actions"><button id="internal-save" type="submit" class="primary-button">Publicar para todos os clientes</button></div></form>
+ <div class="staff-actions"><button id="internal-save" type="submit" class="primary-button">Enviar comunicado para todos</button></div></form>
  <p id="internal-status" class="clients-status" role="status" aria-live="polite">Consultando publicações internas...</p>
  <details class="module-spacer"><summary>Histórico de publicações internas (até 50)</summary><div id="internal-list" class="feedback-admin-list"></div></details>
  </section><section class="surface-card module-spacer">
- <div class="section-heading wrap-heading"><div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Notificações externas (Firebase)</h2></div><button id="ann-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
+ <div class="section-heading wrap-heading"><div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Notificações externas avulsas (Firebase)</h2></div><button id="ann-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
  <p id="ann-mode" class="muted">Fase de preparação: nenhum disparo de notificações está habilitado.</p>
  <div class="client-summary two-summary"><div><span class="metric-label">Contas habilitadas para push</span><strong id="ann-count">—</strong></div><div><span class="metric-label">Aparelhos habilitados para push</span><strong id="ann-devices">—</strong></div></div>
  <details class="module-spacer"><summary>Conferir todos os clientes e notificações</summary><div id="ann-diagnostic" class="feedback-admin-list"></div></details>
@@ -610,7 +610,7 @@ function annControls(){
  $('ann-target-wrap').hidden=audience!=='selected';$('ann-date-wrap').hidden=!scheduled;$('ann-date').required=scheduled;
  const chosen=annChosen(audience), devices=chosen.reduce((n,r)=>n+Number(r.devices||0),0);
  const allowed=audience==='test'?annTestEnabled:['all','selected'].includes(audience)&&annEnabled;
- $('ann-save').disabled=annBusy||!annLoaded||!annOwner()||!allowed||scheduled||!chosen.length||devices>20;
+ $('ann-save').disabled=annBusy||internalBusy||!annLoaded||!annOwner()||!allowed||scheduled||!chosen.length||devices>20;
  $('ann-save').textContent=audience==='test'?'Enviar teste para minha conta':`Enviar comunicado (${chosen.length} conta(s))`;
  for(const o of $('ann-audience').options)o.disabled=o.value==='test'?!annTestEnabled:!annEnabled;
  $('ann-when').querySelector('[value=scheduled]').disabled=true;
@@ -678,7 +678,7 @@ async function loadAnnDiagnostic(epoch){
  }catch(e){if(checkEpoch(epoch))root.append(feedbackControlText('p','Não foi possível comparar os clientes: '+e.message,'muted'))}
 }
 async function saveAnnouncement(event){
- event.preventDefault();if(annBusy||!annLoaded||!annOwner())return;
+ event.preventDefault();if(annBusy||internalBusy||!annLoaded||!annOwner())return;
  const title=$('ann-title').value.trim(),body=$('ann-body').value.trim(),audience=$('ann-audience').value;
  if(!title||title.length>100||!body||body.length>500||$('ann-when').value!=='now')return;
  if(audience==='test'?!annTestEnabled:!annEnabled||!['all','selected'].includes(audience))return;
@@ -748,20 +748,47 @@ async function loadInternalCommunications(){
  }catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent='Falha na consulta: '+e.message}
  finally{if(checkEpoch(epoch)){internalLoading=false;internalControls()}}
 }
+// CONTROL 1.11.2 — publicação interna seguida de push opcional, mesmo identificador.
+// O RPC e a Edge Function continuam autorizando exclusivamente o proprietário.
+async function sendPublishedCommunicationPush(draft,epoch){
+ const state=await annRequest('status');
+ if(!checkEpoch(epoch)||!annOwner())throw Error('Sessão alterada.');
+ if(state.owner!==true||state.dispatch_enabled!==true)return 'Push externo indisponível no servidor.';
+ const people=await annRequest('recipients');
+ if(!Array.isArray(people.recipients))throw Error('Lista de aparelhos não confirmada.');
+ const count=people.recipients.length;
+ const devices=people.recipients.reduce((n,r)=>n+Number(r.devices||0),0);
+ if(!count||!devices)return 'Nenhum aparelho habilitado para push externo.';
+ if(devices>20)return 'Push não iniciado: limite piloto de 20 aparelhos excedido. Use os envios avulsos por grupos.';
+ const created=await annRequest('create',{id:draft.p_id,title:draft.p_title,body:draft.p_body,audience:'all',target_user_ids:[],scheduled_at:new Date().toISOString()});
+ if(created.announcement?.id!==draft.p_id||created.announcement.status!=='pending')throw Error('Registro externo não confirmado. Consulte o histórico.');
+ const result=await annRequest('send_now',{id:draft.p_id});
+ if(result.id!==draft.p_id||typeof result.accepted!=='number')throw Error('Resultado externo não confirmado. Consulte o histórico.');
+ return `Push externo: ${result.accepted} aceito(s) pelo Firebase, ${result.failed||0} falha(s), ${result.skipped||0} ignorado(s), ${result.unknown||0} incerto(s). Aceito não significa entrega confirmada.`;
+}
 async function publishInternalCommunication(event){
- event.preventDefault();if(!annOwner()||internalBusy||internalLoading)return;
+ event.preventDefault();if(!annOwner()||internalBusy||internalLoading||annBusy)return;
  const title=$('internal-title').value.trim(),body=$('internal-body').value.trim();
  if(!title||title.length>100||!body||body.length>500){$('internal-status').textContent='Confira título e mensagem.';return}
- if(!confirm('Publicar este comunicado DENTRO DA ALIVI para todas as contas confirmadas, inclusive novos clientes?\n\n'+title+'\n'+body+'\n\nNão será enviado push externo por este botão.'))return;
+ if(!confirm('Enviar comunicado REAL para todas as contas confirmadas dentro da ALIVI, inclusive novos clientes, e tentar push externo para os aparelhos habilitados?\n\n'+title+'\n'+body+'\n\nO push depende da permissão do aparelho e não tem entrega garantida.'))return;
  if(!internalDraft||internalDraft.p_title!==title||internalDraft.p_body!==body)internalDraft={p_id:crypto.randomUUID(),p_title:title,p_body:body};
- const epoch=sessionEpoch;const draft=internalDraft;internalBusy=true;internalControls();
+ const epoch=sessionEpoch;const draft=internalDraft;internalBusy=true;internalControls();annControls();
  $('internal-status').textContent='Publicando no Supabase...';
+ let published=false;
  try{
   const row=await internalRpc('alivi_control_publish_communication',draft,epoch);
   if(row?.id!==draft.p_id||!row.published_at)throw Error('Publicação não confirmada.');
+  published=true;
+  // O mesmo ID é utilizado nas duas tabelas; não republicar se o push falhar.
   internalDraft=null;$('internal-form').reset();
-  $('internal-status').textContent='Publicado no Supabase para todas as contas confirmadas. A leitura depende da MOBILE compatível. Nenhum push externo foi enviado.';
-  try{const rows=await internalRpc('alivi_mobile_list_communications',{},epoch);if(Array.isArray(rows))renderInternalCommunications(rows)}catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent+=' Histórico não atualizado: '+e.message;}
- }catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent='Publicação não confirmada: '+e.message+'. Confira o histórico. Repetir com o mesmo texto nesta tela reutiliza o identificador.';}
- finally{if(checkEpoch(epoch)){internalBusy=false;internalControls()}}
+  $('internal-status').textContent='Publicado internamente. Enviando aos aparelhos habilitados...';
+  let result;
+  try{result=await sendPublishedCommunicationPush(draft,epoch)}catch(e){result='Push não confirmado: '+e.message+'. Confira o histórico externo e o celular antes de repetir. Não republique o comunicado interno.';}
+  if(!checkEpoch(epoch)||!annOwner())return;
+  $('internal-status').textContent='Publicado para todas as contas confirmadas na MOBILE compatível. '+result;
+  try{const rows=await internalRpc('alivi_mobile_list_communications',{},epoch);if(Array.isArray(rows))renderInternalCommunications(rows)}catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent+=' Histórico interno não atualizado: '+e.message;}
+  // Atualiza o histórico de push sem reenviar.
+  if(checkEpoch(epoch)&&annOwner())await loadAnnouncements(true);
+ }catch(e){if(checkEpoch(epoch)&&annOwner())$('internal-status').textContent=published?'Publicado internamente. Falha após a publicação: '+e.message+'. Não republique; confira o histórico.':'Publicação não confirmada: '+e.message+'. Confira o histórico. Repetir com o mesmo texto nesta tela reutiliza o identificador.';}
+ finally{if(checkEpoch(epoch)){internalBusy=false;internalControls();annControls()}}
 }
