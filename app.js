@@ -22,7 +22,7 @@ function canModule(name){return isManager()||(isSupport()&&staffPermissions?.[pe
 function canScreen(screen){
  if(!permission?.active)return false;
  if(screen==='overview'||screen==='settings')return true;
- if(screen==='staff'||screen==='feedback')return permission.role==='owner';
+ if(screen==='staff'||screen==='feedback'||screen==='announcements')return permission.role==='owner';
  if(screen==='subscriptions')return canModule('plans')||canModule('subscriptions');
  if(screen==='monitoring')return canModule('usage');
  if(screen==='clients'||screen==='companies')return canModule(screen);
@@ -62,11 +62,11 @@ function navigate(screen){
  if(screen==='subscriptions')loadCommercial();
  if(screen==='monitoring')loadUsage();
  if(screen==='overview')loadOverview();
- if(screen==='staff')loadStaff();if(screen==='feedback')loadControlFeedback();
+ if(screen==='staff')loadStaff();if(screen==='feedback')loadControlFeedback();if(screen==='announcements')void loadAnnouncements();
 }
 function closeMenu(){$('sidebar').classList.remove('open');$('drawer-overlay').hidden=true}
 function storeSession(data){session=data;localStorage.setItem(SESSION_KEY,JSON.stringify(data))}
-function clearSession(){session=null;identity=null;permission=null;staffPermissions=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('feedback-control-list').replaceChildren();$('feedback-control-count').textContent='—';$('feedback-control-open').textContent='—';$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.';$('plan-form').reset();$('trial-form').reset();$('plan-existing').replaceChildren(new Option('+ Criar novo plano',''));$('trial-company').replaceChildren(new Option('Escolha uma empresa cadastrada',''));$('trial-plan').replaceChildren(new Option('Escolha um plano ativo',''));$('plan-save-status').textContent='Entre novamente para editar planos.';$('trial-save-status').textContent='Entre novamente para cadastrar testes.'}
+function clearSession(){resetAnnouncements();session=null;identity=null;permission=null;staffPermissions=null;refreshing=null;clientRows=null;clientsLoading=null;staffRows=null;staffLoading=null;sessionEpoch++;$('staff-nav').hidden=true;$('staff-form').reset();$('staff-save-status').textContent='Entre como proprietário para gerenciar a equipe.';escTable('staff-table-body',5,'Entre novamente para consultar a equipe.');$('staff-status').textContent='Entre novamente para consultar.';Object.keys(cache).forEach(k=>{cache[k]=null;delete inFlight[k]});localStorage.removeItem(SESSION_KEY);$('feedback-control-list').replaceChildren();$('feedback-control-count').textContent='—';$('feedback-control-open').textContent='—';$('clients-count').textContent='—';$('clients-verified').textContent='—';$('clients-table-body').replaceChildren();$('clients-status').textContent='Entre novamente para consultar os cadastros.';for(const [id,cols] of [['companies-table-body',4],['plans-table-body',5],['subs-table-body',5],['usage-table-body',5]])escTable(id,cols,'Entre novamente para consultar.');for(const id of ['companies-count','companies-active','overview-companies','overview-plans','overview-subs','overview-usage','overview-cost','usage-count','usage-input','usage-output','usage-cost'])$(id).textContent='—';for(const id of ['companies-status','plans-status','subs-status','usage-status','overview-status','company-create-status'])$(id).textContent='Entre novamente para consultar ou alterar registros.';$('plan-form').reset();$('trial-form').reset();$('plan-existing').replaceChildren(new Option('+ Criar novo plano',''));$('trial-company').replaceChildren(new Option('Escolha uma empresa cadastrada',''));$('trial-plan').replaceChildren(new Option('Escolha um plano ativo',''));$('plan-save-status').textContent='Entre novamente para editar planos.';$('trial-save-status').textContent='Entre novamente para cadastrar testes.'}
 async function request(path,opts={}){const r=await fetch(SB+path,{...opts,headers:{apikey:PUB,'Content-Type':'application/json',...(opts.token?{Authorization:'Bearer '+opts.token}:{}),...(opts.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok){const err=new Error(data.msg||data.error_description||data.message||data.error||('Erro HTTP '+r.status));err.status=r.status;throw err}return data}
 async function accessToken(){if(!session?.access_token)throw Error('Entre novamente na CONTROL');if(Number(session.expires_at||0)>Date.now()/1000+90)return session.access_token;if(!session.refresh_token)throw Error('Sessão expirada. Entre novamente.');if(!refreshing)refreshing=(async()=>{const d=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})});storeSession(d);return d.access_token})().finally(()=>{refreshing=null});return refreshing}
 async function validateAccess(){const token=await accessToken();const user=await request('/auth/v1/user',{method:'GET',token});if(!user.id||!user.email_confirmed_at)throw Error('Confirme seu e-mail antes de acessar a CENTRAL');const rows=await request('/rest/v1/alivi_central_admins?select=user_id,role,active&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{method:'GET',token});if(!Array.isArray(rows)||rows.length!==1||rows[0].active!==true||!['owner','admin','support'].includes(rows[0].role))throw Error('Esta conta não tem autorização ativa para a ALIVI CONTROL.');
@@ -487,6 +487,8 @@ $('reload-control-button').addEventListener('click',()=>{
 });
 $('installed-control-version').textContent=CONTROL_VERSION;
 
+let annRecipients=[], annRows=[], annBusy=false, annEnabled=false, annDraft=null, annLoaded=false;
+initAnnouncements();
 restore().then(()=>{if(identity&&permission?.active)checkControlUpdate(false)});
 
 
@@ -539,3 +541,104 @@ async function loadControlFeedback(){
 }
 $('feedback-control-refresh').addEventListener('click',loadControlFeedback);
 $('feedback-control-search').addEventListener('input',renderControlFeedback);
+
+// ALIVI CONTROL — central de comunicados, fase de registro e consulta.
+// O servidor valida o perfil owner novamente. Nenhum envio nesta fase.
+function annOwner(){return !!identity&&permission?.active===true&&permission.role==='owner'}
+function resetAnnouncements(){
+ annRecipients=[];annRows=[];annBusy=false;annEnabled=false;annDraft=null;annLoaded=false;
+ if(!$('ann-form'))return;
+ $('ann-form').reset();$('ann-audience').value='test';$('ann-targets').replaceChildren();
+ $('ann-list').replaceChildren();$('ann-status').textContent='Entre como proprietário.';
+ $('ann-count').textContent='—';$('ann-devices').textContent='—';$('ann-nav').hidden=true;annControls();
+}
+function initAnnouncements(){
+ titles.announcements=['Comunicados','Central de comunicados.','Prepare avisos e acompanhe os registros destinados a usuários com notificações habilitadas.'];
+ const nav=document.createElement('button');nav.type='button';nav.id='ann-nav';nav.className='nav-item';nav.dataset.screen='announcements';nav.hidden=true;
+ nav.innerHTML='<span class="nav-icon">✉</span> Comunicados';
+ $('main-nav').insertBefore(nav,$('main-nav').querySelector('[data-screen="settings"]'));
+ nav.addEventListener('click',()=>navigate('announcements'));
+ const screen=document.createElement('section');screen.id='screen-announcements';screen.className='screen';screen.setAttribute('aria-label','Comunicados');
+ screen.innerHTML=`<section class="surface-card">
+ <div class="section-heading wrap-heading"><div><span class="eyebrow">SOMENTE PROPRIETÁRIO</span><h2>Central de comunicados</h2></div><button id="ann-refresh" type="button" class="secondary-button">↻ Atualizar</button></div>
+ <p id="ann-mode" class="muted">Fase de preparação: nenhum disparo de notificações está habilitado.</p>
+ <div class="client-summary two-summary"><div><span class="metric-label">Contas habilitadas</span><strong id="ann-count">—</strong></div><div><span class="metric-label">Aparelhos habilitados</span><strong id="ann-devices">—</strong></div></div>
+ <form id="ann-form" class="commercial-editor">
+ <label for="ann-audience" class="field-label">Destinatários</label><select id="ann-audience" class="control-input"><option value="test">Somente minha conta (teste)</option><option value="selected">Clientes selecionados</option><option value="all">Todos os clientes habilitados</option></select>
+ <div id="ann-target-wrap" hidden><label for="ann-targets" class="field-label">Escolha as contas (Ctrl + clique para selecionar várias)</label><select id="ann-targets" class="control-input" multiple size="5"></select></div>
+ <label for="ann-title" class="field-label">Título</label><input id="ann-title" class="control-input" required maxlength="100" placeholder="Ex.: Nova atualização da ALIVI">
+ <label for="ann-body" class="field-label">Mensagem</label><textarea id="ann-body" class="control-input" required maxlength="500" rows="5" placeholder="Escreva ou cole seu comunicado"></textarea>
+ <label for="ann-when" class="field-label">Horário pretendido</label><select id="ann-when" class="control-input"><option value="now">Agora</option><option value="scheduled">Agendar</option></select>
+ <div id="ann-date-wrap" hidden><label for="ann-date" class="field-label">Data e hora (horário deste aparelho)</label><input id="ann-date" type="datetime-local" class="control-input"></div>
+ <div class="staff-actions"><button id="ann-save" class="primary-button" type="submit" disabled>Registrar teste</button></div></form>
+ <p id="ann-status" class="clients-status" role="status" aria-live="polite">Consultando serviço protegido...</p></section>
+ <section class="surface-card module-spacer"><div class="section-heading"><div><span class="eyebrow">HISTÓRICO</span><h2>Comunicados registrados</h2></div></div><div id="ann-list" class="feedback-admin-list"></div></section>`;
+ document.querySelector('.main-content').append(screen);
+ $('ann-refresh').onclick=()=>void loadAnnouncements();
+ $('ann-audience').onchange=annControls;$('ann-when').onchange=annControls;
+ $('ann-form').addEventListener('input',()=>{annDraft=null;});
+ $('ann-form').addEventListener('submit',saveAnnouncement);
+ annControls();
+}
+function annControls(){
+ const audience=$('ann-audience').value,scheduled=$('ann-when').value==='scheduled';
+ $('ann-target-wrap').hidden=audience!=='selected';$('ann-date-wrap').hidden=!scheduled;$('ann-date').required=scheduled;
+ $('ann-save').disabled=annBusy||!annLoaded||!annOwner()||(!annEnabled&&audience!=='test');
+ $('ann-save').textContent=annEnabled?'Registrar comunicado':'Registrar teste';
+ $('ann-refresh').disabled=annBusy;
+}
+async function annRequest(action,extra={}){
+ if(!annOwner())throw Error('Somente o proprietário pode gerenciar comunicados.');
+ const epoch=sessionEpoch, token=await accessToken();
+ if(!checkEpoch(epoch)||!annOwner())throw Error('Sessão alterada.');
+ const result=await request('/functions/v1/alivi-announcements',{method:'POST',token,body:JSON.stringify({action,...extra})});
+ if(!checkEpoch(epoch)||!annOwner())throw Error('Sessão alterada.');
+ return result;
+}
+function renderAnnouncements(){
+ const root=$('ann-list');root.replaceChildren();
+ const names={pending:'Pendente (não enviado)',processing:'Em processamento',completed:'Concluído',partial:'Parcial',failed:'Falhou',cancelled:'Cancelado'};
+ if(!annRows.length){root.append(feedbackControlText('p','Nenhum comunicado registrado.','muted'));return}
+ for(const r of annRows){
+  const item=document.createElement('article');item.className='feedback-admin-item';
+  item.append(feedbackControlText('strong',r.title),feedbackControlText('p',r.body,'feedback-body'),feedbackControlText('p',`${names[r.status]||r.status} · ${clientDate(r.scheduled_at)} · ${r.audience==='test'?'Minha conta':r.audience==='all'?'Todos':'Selecionados'}`,'muted'));
+  if(r.status==='pending'){
+   const b=feedbackControlText('button','Cancelar registro','secondary-button');b.type='button';b.disabled=annBusy;
+   b.onclick=async()=>{if(annBusy||!annOwner()||!confirm('Cancelar este comunicado pendente?'))return;const epoch=sessionEpoch;annBusy=true;annControls();b.disabled=true;
+    try{await annRequest('cancel',{id:r.id});if(checkEpoch(epoch))await loadAnnouncements(true)}catch(e){if(checkEpoch(epoch))$('ann-status').textContent='Falha ao cancelar: '+e.message}finally{if(checkEpoch(epoch)){annBusy=false;annControls();b.disabled=false}}};
+   item.append(b);
+  }root.append(item);
+ }
+}
+async function loadAnnouncements(internal=false){
+ if(!annOwner()||(annBusy&&!internal))return;
+ const epoch=sessionEpoch;annBusy=true;annLoaded=false;annControls();$('ann-status').textContent='Consultando destinatários e histórico...';
+ try{
+  const [state,people,history]=await Promise.all([annRequest('status'),annRequest('recipients'),annRequest('list')]);
+  if(!checkEpoch(epoch)||!annOwner())return;
+  if(state.owner!==true||!Array.isArray(people.recipients)||!Array.isArray(history.announcements))throw Error('Resposta inesperada do servidor.');
+  annEnabled=state.dispatch_enabled===true;annRecipients=people.recipients;annRows=history.announcements;
+  const previous=new Set(Array.from($('ann-targets').selectedOptions,o=>o.value));$('ann-targets').replaceChildren();
+  for(const r of annRecipients){const option=new Option(`${r.email} (${r.devices} aparelho(s))`,r.user_id);option.selected=previous.has(r.user_id);$('ann-targets').add(option)}
+  $('ann-count').textContent=String(annRecipients.length);$('ann-devices').textContent=String(annRecipients.reduce((n,r)=>n+Number(r.devices||0),0));
+  $('ann-mode').textContent=annEnabled?'Serviço de disparo habilitado pelo servidor. Confira os destinatários antes de registrar.':'Fase de preparação: nenhum disparo está habilitado. Apenas registros de teste na sua conta podem ser criados; cancele-os ao terminar.';
+  $('ann-status').textContent='Consulta concluída. '+annRecipients.length+' conta(s) habilitada(s).';annLoaded=true;
+ }catch(e){if(checkEpoch(epoch))$('ann-status').textContent='Falha: '+e.message}
+ finally{if(checkEpoch(epoch)){annBusy=false;annControls();renderAnnouncements()}}
+}
+async function saveAnnouncement(event){
+ event.preventDefault();if(annBusy||!annLoaded||!annOwner())return;
+ const title=$('ann-title').value.trim(),body=$('ann-body').value.trim(),audience=$('ann-audience').value;
+ if(!title||!body)return;
+ if(!annEnabled&&audience!=='test')return;
+ const targets=Array.from($('ann-targets').selectedOptions,o=>o.value).sort();
+ if(audience==='selected'&&(!targets.length||targets.length>100)){$('ann-status').textContent='Selecione de 1 a 100 contas.';return}
+ const scheduled=$('ann-when').value==='scheduled';const at=scheduled?new Date($('ann-date').value):new Date();
+ if(!Number.isFinite(+at)||(scheduled&&+at<=Date.now())){$('ann-status').textContent='Escolha uma data futura válida.';return}
+ if(!confirm(annEnabled?'Registrar este comunicado para o público selecionado?':'Registrar apenas um teste na sua conta? Nenhuma notificação será enviada nesta etapa. Cancele o registro após conferir.'))return;
+ if(!annDraft)annDraft={id:crypto.randomUUID(),title,body,audience,target_user_ids:audience==='selected'?targets:[],scheduled_at:at.toISOString()};
+ const epoch=sessionEpoch;annBusy=true;annControls();$('ann-status').textContent='Registrando...';
+ try{const result=await annRequest('create',annDraft);if(!checkEpoch(epoch))return;if(!result.announcement?.id)throw Error('Registro não confirmado.');annDraft=null;$('ann-form').reset();await loadAnnouncements(true);if(checkEpoch(epoch))$('ann-status').textContent=result.dispatch_enabled===false?'Registro salvo. Nenhuma notificação enviada. Cancele o teste após conferir.':'Registro confirmado pelo servidor.'}
+ catch(e){if(checkEpoch(epoch))$('ann-status').textContent='Falha ao registrar: '+e.message}
+ finally{if(checkEpoch(epoch)){annBusy=false;annControls();renderAnnouncements()}}
+}
