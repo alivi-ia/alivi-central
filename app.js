@@ -542,8 +542,8 @@ async function loadControlFeedback(){
 $('feedback-control-refresh').addEventListener('click',loadControlFeedback);
 $('feedback-control-search').addEventListener('input',renderControlFeedback);
 
-// ALIVI CONTROL — central de comunicados, fase de registro e consulta.
-// O servidor valida o perfil owner novamente. Nenhum envio nesta fase.
+// ALIVI CONTROL — comunicados com envio manual autorizado no servidor.
+// Agendamento automatico permanece desabilitado.
 function annOwner(){return !!identity&&permission?.active===true&&permission.role==='owner'}
 function resetAnnouncements(){
  annRecipients=[];annRows=[];annBusy=false;annEnabled=false;annTestEnabled=false;annDraft=null;annLoaded=false;
@@ -576,18 +576,28 @@ function initAnnouncements(){
  <section class="surface-card module-spacer"><div class="section-heading"><div><span class="eyebrow">HISTÓRICO</span><h2>Comunicados registrados</h2></div></div><div id="ann-list" class="feedback-admin-list"></div></section>`;
  document.querySelector('.main-content').append(screen);
  $('ann-refresh').onclick=()=>void loadAnnouncements();
- $('ann-audience').onchange=annControls;$('ann-when').onchange=annControls;
+ $('ann-audience').onchange=annControls;$('ann-when').onchange=annControls;$('ann-targets').onchange=annControls;
  $('ann-form').addEventListener('input',()=>{annDraft=null;});
  $('ann-form').addEventListener('submit',saveAnnouncement);
  annControls();
 }
+function annChosen(audience){
+ if(audience==='test')return annRecipients.filter(r=>r.user_id===identity?.id);
+ if(audience==='all')return annRecipients;
+ if(audience==='selected'){
+  const ids=new Set(Array.from($('ann-targets').selectedOptions,o=>o.value));
+  return annRecipients.filter(r=>ids.has(r.user_id));
+ }
+ return [];
+}
 function annControls(){
  const audience=$('ann-audience').value,scheduled=$('ann-when').value==='scheduled';
  $('ann-target-wrap').hidden=audience!=='selected';$('ann-date-wrap').hidden=!scheduled;$('ann-date').required=scheduled;
- const canTest=annTestEnabled&&audience==='test'&&!scheduled&&annRecipients.some(r=>r.user_id===identity?.id);
- $('ann-save').disabled=annBusy||!annLoaded||!annOwner()||!canTest;
- $('ann-save').textContent='Enviar teste para minha conta';
- for(const o of $('ann-audience').options)o.disabled=o.value!=='test';
+ const chosen=annChosen(audience), devices=chosen.reduce((n,r)=>n+Number(r.devices||0),0);
+ const allowed=audience==='test'?annTestEnabled:['all','selected'].includes(audience)&&annEnabled;
+ $('ann-save').disabled=annBusy||!annLoaded||!annOwner()||!allowed||scheduled||!chosen.length||devices>20;
+ $('ann-save').textContent=audience==='test'?'Enviar teste para minha conta':`Enviar comunicado (${chosen.length} conta(s))`;
+ for(const o of $('ann-audience').options)o.disabled=o.value==='test'?!annTestEnabled:!annEnabled;
  $('ann-when').querySelector('[value=scheduled]').disabled=true;
  $('ann-refresh').disabled=annBusy;
  for(const id of ['ann-audience','ann-when','ann-title','ann-body','ann-targets','ann-date'])$(id).disabled=annBusy;
@@ -627,7 +637,7 @@ async function loadAnnouncements(internal=false){
   const previous=new Set(Array.from($('ann-targets').selectedOptions,o=>o.value));$('ann-targets').replaceChildren();
   for(const r of annRecipients){const option=new Option(`${r.email} (${r.devices} aparelho(s))`,r.user_id);option.selected=previous.has(r.user_id);$('ann-targets').add(option)}
   $('ann-count').textContent=String(annRecipients.length);$('ann-devices').textContent=String(annRecipients.reduce((n,r)=>n+Number(r.devices||0),0));
-  $('ann-mode').textContent=annTestEnabled?'Envio real de teste somente para sua conta. Envio coletivo e agendamento ainda bloqueados.':'Servidor ainda não habilitou o envio de teste.';
+  $('ann-mode').textContent=annEnabled?'Envio manual liberado para contas habilitadas (até 20 aparelhos por comunicado). Agendamento automático ainda indisponível.':annTestEnabled?'Apenas envio de teste liberado pelo servidor.':'Servidor ainda não habilitou o envio.';
   $('ann-status').textContent='Consulta concluída. '+annRecipients.length+' conta(s) habilitada(s). '+(annRecipients.some(r=>r.user_id===identity?.id)?'Sua conta tem aparelho cadastrado.':'Sua conta não consta entre as habilitadas. Ative as notificações na MOBILE.');annLoaded=true;
   await loadAnnDiagnostic(epoch);
  }catch(e){if(checkEpoch(epoch))$('ann-status').textContent='Falha: '+e.message}
@@ -653,27 +663,32 @@ async function loadAnnDiagnostic(epoch){
  }catch(e){if(checkEpoch(epoch))root.append(feedbackControlText('p','Não foi possível comparar os clientes: '+e.message,'muted'))}
 }
 async function saveAnnouncement(event){
- event.preventDefault();if(annBusy||!annLoaded||!annOwner()||!annTestEnabled)return;
- const title=$('ann-title').value.trim(),body=$('ann-body').value.trim();
- if(!title||!body||$('ann-audience').value!=='test'||$('ann-when').value!=='now')return;
- if(!annRecipients.some(r=>r.user_id===identity?.id)){$('ann-status').textContent='Sua conta não tem aparelho habilitado.';return;}
- if(!confirm('Enviar uma notificação REAL somente aos aparelhos habilitados da sua própria conta? Nenhum outro cliente receberá este teste.'))return;
- if(!annDraft)annDraft={id:crypto.randomUUID(),title,body,audience:'test',target_user_ids:[],scheduled_at:new Date().toISOString()};
- const epoch=sessionEpoch;const draft=annDraft;annBusy=true;annControls();$('ann-status').textContent='Registrando teste...';
+ event.preventDefault();if(annBusy||!annLoaded||!annOwner())return;
+ const title=$('ann-title').value.trim(),body=$('ann-body').value.trim(),audience=$('ann-audience').value;
+ if(!title||title.length>100||!body||body.length>500||$('ann-when').value!=='now')return;
+ if(audience==='test'?!annTestEnabled:!annEnabled||!['all','selected'].includes(audience))return;
+ const chosen=annChosen(audience),devices=chosen.reduce((n,r)=>n+Number(r.devices||0),0);
+ if(!chosen.length||devices>20){$('ann-status').textContent='Escolha destinatários habilitados, até 20 aparelhos.';return;}
+ const target=audience==='test'?'somente minha conta':audience==='all'?'todos os clientes habilitados no momento do envio':'os clientes selecionados';
+ if(!confirm(`Enviar uma notificação REAL para ${target}?\nContagem atual: ${chosen.length} conta(s), ${devices} aparelho(s).\n\n${title}\n${body}\n\nA entrega no aparelho não é garantida.`))return;
+ const ids=audience==='selected'?chosen.map(r=>r.user_id).sort():[];
+ if(annDraft&&(annDraft.title!==title||annDraft.body!==body||annDraft.audience!==audience||JSON.stringify(annDraft.target_user_ids)!==JSON.stringify(ids)))annDraft=null;
+ if(!annDraft)annDraft={id:crypto.randomUUID(),title,body,audience,target_user_ids:ids,scheduled_at:new Date().toISOString()};
+ const epoch=sessionEpoch;const draft=annDraft;annBusy=true;annControls();$('ann-status').textContent='Registrando comunicado...';
  let attempted=false;
  try{
   const created=await annRequest('create',draft);
   if(!checkEpoch(epoch))return;
   if(created.announcement?.id!==draft.id||created.announcement.status!=='pending')throw Error('Registro pendente não confirmado. Confira o histórico antes de tentar novamente.');
-  $('ann-status').textContent='Enviando teste pelo Firebase...';attempted=true;
-  const result=await annRequest('send_test',{id:draft.id});
+  $('ann-status').textContent='Enviando pelo Firebase...';attempted=true;
+  const result=await annRequest(audience==='test'?'send_test':'send_now',{id:draft.id});
   if(!checkEpoch(epoch))return;
   if(result.id!==draft.id||typeof result.accepted!=='number')throw Error('Resultado não confirmado. Confira o histórico.');
   annDraft=null;$('ann-form').reset();await loadAnnouncements(true);
-  if(checkEpoch(epoch))$('ann-status').textContent=`Teste: ${result.accepted} aceito(s) pelo Firebase, ${result.failed||0} falha(s), ${result.skipped||0} ignorado(s), ${result.unknown||0} incerto(s). Confira o recebimento no celular.`;
+  if(checkEpoch(epoch))$('ann-status').textContent=`Resultado: ${result.accepted} aceito(s) pelo Firebase, ${result.failed||0} falha(s), ${result.skipped||0} ignorado(s), ${result.unknown||0} incerto(s). Aceito não significa recebido no aparelho.`;
  }catch(e){
   if(checkEpoch(epoch)){
-   if(attempted){await loadAnnouncements(true);if(checkEpoch(epoch))$('ann-status').textContent='Envio não confirmado: '+e.message+' Confira o histórico e o celular antes de repetir.';}
+   if(attempted){await loadAnnouncements(true);if(checkEpoch(epoch)){$('ann-audience').value=audience;for(const o of $('ann-targets').options)o.selected=ids.includes(o.value);$('ann-status').textContent='Envio não confirmado: '+e.message+' Confira o histórico e o celular antes de repetir.';}}
    else $('ann-status').textContent='Falha ao registrar: '+e.message;
   }
  }finally{if(checkEpoch(epoch)){annBusy=false;annControls();renderAnnouncements()}}
